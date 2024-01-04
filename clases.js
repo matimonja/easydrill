@@ -1,12 +1,12 @@
 // TO DO
 /*
-- ?? (creacion ejercicio) Cuando se mueve al jugador sobre la bocha, por mas que la cubra, si no se pasa por el centro del jugador, no la levanta
-- BUG (creacion ejercicio) El jugador levanta la bocha aunque siga en movimiento, la idea es que lo haga solo cuando se suelta al jugador
-- NEW (reproduccion) Pase
-- NEW (reproduccion) Buscar colisiones entre bocha-jugador jugador-jugador cuando ya no estan en movimiento. Tomar posesion de la bocha
+- BUG (creacion ejercicio) Cuando se suelta la bocha sobre el jugador no se establece la posecion. Creo que tiene que ver con
+    que el evento mouse up ocurre al mismo tiempo que la actualizacion de la bocha en base al jugador, por lo tanto no hay posecion
+    
 - NEW (creacion ejercicio) Poder eliminar acciones, ctrl+z
 - NEW (creacion ejercicio) Hacer que las velocidades varien de acuerdo a el tiempo esperado de cada accion
 - NEW (reproduccion) Dibujar elementos estaticos
+- cambiar nombre de getActividad
 */
 
 function calcularVersor2Puntos(p1X, p1Y, p2X, p2Y){
@@ -72,16 +72,17 @@ function pDistance(x, y, x1, y1, x2, y2) {
 }
 
 class ReproduccionMovimientoLibreModel{
-    constructor(model){
+    constructor(model, jug){
         this.modeloEstatico = model;
         this.posActual = model.posInicial;
         this.movimientoTerminado = false;
         this.recorridoIdx = 0;
+        this.jugadorMovimiento = jug;
 
     }
 
     actualizar(elapsed){
-        if ((!this.movimientoTerminado)& (this.condicionesMovimientoOk())){
+        if ((!this.movimientoTerminado) & (this.condicionesMovimientoOk())){
             this.recorridoIdx += this.modeloEstatico.velocidad;
             let nuevaPos = this.modeloEstatico.recorrido[Math.floor(this.recorridoIdx)];
             this.setPosicionActual(nuevaPos);
@@ -108,18 +109,19 @@ class ReproduccionMovimientoLibreModel{
     }
 
     condicionesMovimientoOk(){
-        return true;
+        return ! this.jugadorMovimiento.tieneBocha();
     }
 }
 
 class ReproduccionMovimientoRectoModel{
-    constructor(model ){
+    constructor(model, jug ){
         this.modeloEstatico = model;
         this.posActualX = model.posInicial.x;
         this.posActualY = model.posInicial.y;
         this.velocidadX = this.modeloEstatico.obtenerVelocidad().x;
         this.velocidadY = this.modeloEstatico.obtenerVelocidad().y;
         this.movimientoTerminado = false;
+        this.jugadorMovimiento = jug;
 
     }
 
@@ -181,14 +183,46 @@ class ReproduccionMovimientoRectoModel{
     }
 }
 
-class ReproduccionPaseModel extends ReproduccionMovimientoRectoModel{
+class ReproduccionPaseModel {
+    constructor(model, jugador){
+        this.jugadorPase = jugador;
+        this.modeloEstatico = model;
+        this.paseRealizado = false;
+    }
+
+    actualizar(elapsed){
+        if((!this.paseRealizado) & (this.jugadorPase.tieneBocha())){
+            //creo accion para la bocha
+            let bocha = this.jugadorPase.getElementoActual();
+            let accionMovimiento = new ReproduccionMovimientoRectoModel(this.modeloEstatico, bocha);
+            //Quito bocha del jugador
+            this.jugadorPase.quitarElementoActual()
+            // Quito jugador de la bocha
+            bocha.removerPoseedor();
+            //asigno accion a la bocha
+            bocha.agregarAccion(accionMovimiento);
+            bocha.setNuevaAccion();
+            // Pase realizado
+            this.paseRealizado = true;
+        }
+    }
     
+    getPosicionActual(){
+        return this.modeloEstatico.obtenerPosicionInicial();
+    }
+    
+    getMovimientoFinalizado(){
+        return this.paseRealizado;
+    }
+
+    condicionesMovimientoOk(){
+        return this.jugadorPase.tieneBocha();
+    }
 }
 
 class ReproduccionConduccionLibreModel extends ReproduccionMovimientoLibreModel{
     constructor(model, jugador){
-        super(model);
-        this.jugadorMovimiento = jugador;
+        super(model, jugador);
     }
 
     condicionesMovimientoOk(){
@@ -198,8 +232,7 @@ class ReproduccionConduccionLibreModel extends ReproduccionMovimientoLibreModel{
 
 class ReproduccionConduccionRectaModel extends ReproduccionMovimientoRectoModel{
     constructor(model, jugador){
-        super(model);
-        this.jugadorMovimiento = jugador;
+        super(model, jugador);
     }
 
     condicionesMovimientoOk(){
@@ -208,13 +241,18 @@ class ReproduccionConduccionRectaModel extends ReproduccionMovimientoRectoModel{
 
 }
 class ReproducirMovimientoBocha {
-    constructor(model){
+    constructor(model, entrenamiento){
         this.model = model;
+        this.entrenamiento = entrenamiento;
         this.accionActual = null;
         this.accionActualIdx = 0;
         this.posicionActual = model.posicion;
-        this.acciones = []
+        this.acciones = []//model.acciones;
         this.model.setObjetoReproductor(this);
+        this.poseedorActual = null;
+        if (this.model.poseedor){
+            this.poseedorActual = this.model.poseedor;
+        }
     }
 
     entrar(){
@@ -224,13 +262,8 @@ class ReproducirMovimientoBocha {
     }
 
     actualizarAccionActual(){
-        let accionActual = this.model.acciones[this.accionActualIdx];
-        let accionView = this.crearAccionModel(accionActual);
-        this.accionActual = accionView;
-    }
-
-    crearAccionModel(accion){
-        
+        let accionActual = this.acciones[this.accionActualIdx];
+        this.setAccionActual(accionActual);
     }
 
     actualizar(elapsed){
@@ -240,16 +273,35 @@ class ReproducirMovimientoBocha {
             this.setPosicionActual(pos);
             let finMovimiento = this.accionActual.getMovimientoFinalizado();
             if (finMovimiento){
-                this.setNuevaAccion();
+                if((this.acciones.length -1) > this.accionActualIdx){
+                    this.setNuevaAccion();
+                }
+                else{
+                    this.setAccionActual(null);
+                }
+                
             }
+        }
+
+    }
+
+    actualizarReferenciasReproduccion(){
+        if (this.poseedorActual){
+            this.setPoseedor(this.poseedorActual.getObjetoReproductor());
         }
     }
 
     setNuevaAccion(){
-        if (this.accionActualIdx < this.acciones.length -1){ //quedan acciones
-            this.accionActualIdx ++;
+        if (!this.accionActual){
+            // si no hay accion actual pero hay acciones en la lista y el indice es 0
             this.actualizarAccionActual();
-            
+        }
+        else{
+            if (this.accionActualIdx < this.acciones.length -1){ //quedan acciones
+                this.accionActualIdx ++;
+                this.actualizarAccionActual();
+                
+            }
         }
     }
 
@@ -257,10 +309,24 @@ class ReproducirMovimientoBocha {
         this.posicionActual = pos;
     }
 
+    getPosicionActual(){
+        return this.posicionActual;
+    }
+
+    getActividad(){
+        if((!this.poseedorActual) & (!this.accionActual)){
+            //no  hay accion ni tampoco accion
+            return true;
+        }
+        else{
+            return false;
+        }
+    }
+
     dibujar(context){
         this.dibujarCirculo(context, this.posicionActual.x, this.posicionActual.y, this.model.radio, {color: this.model.color});
     }
-
+    
     agregarAccion(accion){
         this.acciones.push(accion);
     }
@@ -272,19 +338,45 @@ class ReproducirMovimientoBocha {
         this.setPosicionActual(pos);
     }
 
+    removerPoseedor(){
+        this.setPoseedor(null);
+    }
+
+    setPoseedor(jug){
+        this.poseedorActual = jug;
+    }
+
+    getRadio(){
+        return this.model.radio;
+    }
+
+    hayColisionPunto(x, y){
+        if (this.model.distanciaEntrePuntos(x, y, this.posicionActual.x, this.posicionActual.y) < this.getRadio()){
+            return true;
+        }
+        else{
+            return false;
+        }
+    }
+
+    setAccionActual(acc){
+        this.accionActual = acc;
+    }
+
 }
 
 ReproducirMovimientoBocha.prototype.dibujarCirculo = dibujarCirculo;
 
 class ReproducirMovimientoJugador {
-    constructor(model){
+    constructor(model, entrenamiento){
         this.model = model;
+        this.entrenamiento = entrenamiento;
         this.accionActual = null;
         this.accionActualIdx = 0;
         this.posicionActual = model.posicion;
         let elem = null;
         if(model.elemento){
-            elem = model.elemento.getObjetoReproductor();
+            elem = model.elemento;
         }
         this.elementoActual = elem;
         this.model.setObjetoReproductor(this);
@@ -300,9 +392,9 @@ class ReproducirMovimientoJugador {
     actualizarAccionActual(){
         let accionActual = this.model.acciones[this.accionActualIdx];
         let accionView = this.crearAccionModel(accionActual);
-        this.accionActual = accionView;
+        this.setAccionActual(accionView);
     }
-
+    
     actualizar(elapsed){
         if (this.accionActual){
             this.accionActual.actualizar(elapsed);
@@ -318,15 +410,32 @@ class ReproducirMovimientoJugador {
         }
     }
 
+    actualizarReferenciasReproduccion(){
+        if (this.elementoActual){
+            this.setElementoActual(this.elementoActual.getObjetoReproductor());
+        }
+    }
+
     setNuevaAccion(){
+        if (this.accionActualIdx == this.model.acciones.length -1){
+            // termino la ultima accion
+            if(this.accionActual.getMovimientoFinalizado()){
+                console.log("se remueve accion", this.accionActual, this.accionActual.getMovimientoFinalizado())
+                this.removerAccionActual();
+            }
+        }
         if (this.accionActualIdx < this.model.acciones.length -1){ //quedan acciones
             this.accionActualIdx ++;
-            this.actualizarAccionActual()
+            this.actualizarAccionActual();
         }
     }
 
     setPosicionActual(pos){
         this.posicionActual = pos;
+    }
+
+    getPosicionActual(){
+        return this.posicionActual;
     }
 
     dibujar(context){
@@ -339,6 +448,18 @@ class ReproducirMovimientoJugador {
         this.elementoActual.moverCentro(deltaX, deltaY);
     }
 
+    getActividad(){
+        if(!this.accionActual){
+            // si no tiene accion, devuelve true porque esta inactivo
+            return true;
+        }
+        else if(!this.accionActual.condicionesMovimientoOk()){
+            return true;
+        }
+        else{
+            return false;
+        }
+    }
     
 
     crearAccionModel(accion){
@@ -351,15 +472,15 @@ class ReproducirMovimientoJugador {
             return mov;
         }
         else if(accion instanceof MovimientoLibreModel){
-            let mov = new ReproduccionMovimientoLibreModel(accion);
-            return mov;
-        }
-        else if(accion instanceof MovimientoRectoModel){
-            let mov = new ReproduccionMovimientoRectoModel(accion);
+            let mov = new ReproduccionMovimientoLibreModel(accion, this);
             return mov;
         }
         else if(accion instanceof PaseModel){
             let mov = new ReproduccionPaseModel(accion, this);
+            return mov;
+        }
+        else if(accion instanceof MovimientoRectoModel){
+            let mov = new ReproduccionMovimientoRectoModel(accion, this);
             return mov;
         }
         
@@ -372,6 +493,47 @@ class ReproducirMovimientoJugador {
             }
         }
         return false;
+    }
+
+    paseRealizado(){
+        this.elementoActual = null;
+        this.setNuevaAccion();
+    }
+
+    setElementoActual(elem){
+        console.log()
+        this.elementoActual = elem;
+    }
+
+    getElementoActual(){
+        return this.elementoActual;
+    }
+
+    quitarElementoActual(){
+        this.setElementoActual(null);
+    }
+
+    removerAccionActual(){
+        console.log("accion a null")
+        this.setAccionActual(null);
+    }
+
+    setAccionActual(acc){
+        console.log("Cambio accion",acc)
+        this.accionActual = acc;
+    }
+
+    getRadio(){
+        return this.model.radio
+    }
+
+    hayColisionPunto(x, y){
+        if (this.model.distanciaEntrePuntos(x, y, this.posicionActual.x, this.posicionActual.y) < this.getRadio()){
+            return true;
+        }
+        else{
+            return false;
+        }
     }
 
 }
@@ -685,14 +847,14 @@ class JugadorModel extends Estado{
             let posElem = this.posicionElemento();
             this.elemento.mover(posElem);
         }
-        else {
+        /*else {
             let bocha = this.fsm.bochaEnPosicion(pos);
             if (bocha){
                 this.elemento = bocha
                 let posElem = this.posicionElemento();
                 this.elemento.mover(posElem);
             }
-        }
+        }*/
 
     }
 
@@ -715,6 +877,8 @@ class JugadorModel extends Estado{
       }
   
     mouseUp(){
+        let pos = this.posicion;
+        this.buscarElemento(pos);
         this.salir();
       }
   
@@ -740,6 +904,11 @@ class JugadorModel extends Estado{
 
     seleccionar(){
         this.seleccionado = true;
+    }
+
+    terminarMover(){
+        //this.dibujando = false;
+        this.buscarElemento(this.posicion);
     }
 
     distanciaEntrePuntos(x1, y1, x2, y2){
@@ -791,6 +960,16 @@ class JugadorModel extends Estado{
 
     quitarElemento(){
         this.elemento = null;
+    }
+
+    buscarElemento(pos){
+        let elem = this.fsm.bochaEnPosicion(pos, this.radio);
+        if (elem){
+            this.agarrarElemento(elem);
+            elem.definirPoseedor(this);
+            let posElem = this.posicionElemento();
+            this.elemento.mover(posElem);
+        }
     }
 
 }
@@ -1433,10 +1612,14 @@ class BochaModel extends Estado{
         if (jug){
             let agarrado = jug.agarrarElemento(this);
             if (agarrado){
-                this.poseedor = jug;
+                this.definirPoseedor(jug);
                 this.posicion = jug.posicionElemento();
             }
         }
+    }
+
+    definirPoseedor(jug){
+        this.poseedor = jug;
     }
 
     mover(pos){
@@ -1464,8 +1647,11 @@ class BochaModel extends Estado{
         this.fsm.terminarDibujo(this);
     }
 
-    hayColisionPunto(x, y){
-        if (this.distanciaEntrePuntos(x, y, this.posicion.x, this.posicion.y) < this.radio){
+    hayColisionPunto(x, y, d=0){
+        if (d < this.radio){
+            d = this.radio
+        }
+        if (this.distanciaEntrePuntos(x, y, this.posicion.x, this.posicion.y) < d){
             return true;
         }
         else{

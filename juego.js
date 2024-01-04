@@ -132,12 +132,12 @@ class Dibujante{
         return colisiones
     }
 
-    buscarColisionesClase(x, y, clase){
+    buscarColisionesClase(x, y, clase, radio=0){
         let colisiones = [];
         this.models.reverse().forEach(elem => {
             let res = false;
             if (elem.constructor.name == clase){
-                res = elem.hayColisionPunto(x, y);
+                res = elem.hayColisionPunto(x, y, radio);
             }
             if (res){
                 colisiones.push(elem);
@@ -146,9 +146,9 @@ class Dibujante{
         return colisiones
     }
 
-    bochaEnPosicion(pos){
+    bochaEnPosicion(pos, radio){
         let colis = null;
-        colis = this.buscarColisionesClase(pos.x, pos.y, 'BochaModel');
+        colis = this.buscarColisionesClase(pos.x, pos.y, 'BochaModel', radio);
         return colis[0];
     }
 
@@ -284,10 +284,12 @@ class Entrenamiento{
 
     crearModeloReproduccion(mod){
         if(mod instanceof JugadorModel){
-            return new ReproducirMovimientoJugador(mod);
+            console.log("creacion jugador ", new ReproducirMovimientoJugador(mod, this))
+            return new ReproducirMovimientoJugador(mod, this);
         }
         if(mod instanceof BochaModel){
-            return new ReproducirMovimientoBocha(mod);
+            console.log("creacion bocha", new ReproducirMovimientoBocha(mod, this))
+            return new ReproducirMovimientoBocha(mod, this);
         }
     }
 
@@ -302,6 +304,9 @@ class Entrenamiento{
             dinIni.push(j);
         })
         this.modelosDinamicos = dinIni;
+        this.modelosDinamicos.forEach(elem =>{
+            elem.actualizarReferenciasReproduccion()
+        })
         this.frame()
     }
 
@@ -313,9 +318,61 @@ class Entrenamiento{
         this.modelosDinamicos.forEach(j => {
             if (elapsed > 0){
                 j.actualizar(elapsed);
+                
+                //
+                let l = [];
+                this.modelosDinamicos.forEach(md => {
+                    if(md.getActividad()){
+                        l.push(md)
+                    }
+                })
+                //console.log("modelos dinamicos", this.modelosDinamicos)
+                //console.log("modelos inactivos",l)
+                //
+                let colision = this.buscarColision(j);
+                if (colision){
+                    this.resolverColision(j, colision);
+                }
                 j.dibujar(context);
             }
         })
+    }
+
+    resolverColision(obj1, obj2){
+        let listaClases = [];
+        listaClases.push(obj1.constructor.name);
+        listaClases.push(obj2.constructor.name);
+        if((listaClases.includes("ReproducirMovimientoJugador")) & (listaClases.includes("ReproducirMovimientoBocha"))){
+            this.resolverColisionBochaJugador(obj1, obj2);
+        }
+    }
+
+    resolverColisionBochaJugador(obj1, obj2){
+        if(obj1 instanceof ReproducirMovimientoJugador){
+            obj1.setElementoActual(obj2);
+            obj2.setPoseedor(obj1)
+        }
+        else{
+            obj2.setElementoActual(obj1);
+            obj1.setPoseedor(obj2)
+        }
+    }
+
+    buscarColision(din){
+        if(din.getActividad()){
+            // si no tiene actividad busco colisiones
+            let colisiones = [];
+            this.modelosDinamicos.forEach(md => {
+                if((! (md === din)) & (md.getActividad())){
+                    // si no es el mismo objeto
+                    let res = din.hayColisionPunto(md.getPosicionActual().x, md.getPosicionActual().y);
+                    if (res){
+                        colisiones.push(md);
+                    }
+                }
+            })
+            return colisiones[0];
+        }
     }
 
     frame(timestamp){
