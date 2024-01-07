@@ -16,6 +16,8 @@ class Dibujante{
         this.elementosEscenas = {'0':[]};
         this.jugadores = [];
         this.seleccionador = new Seleccionador(this);
+        this.listaCambiosIdx = -1;
+        this.listaCambios = [];
 
         this.mouseX = 0;
         this.mouseY = 0;
@@ -268,6 +270,27 @@ class Dibujante{
 
         window.requestAnimationFrame(this.actualizarPizarra.bind(this));
     }
+
+    deshacer(){
+        let entidad = this.listaCambios[this.listaCambiosIdx];
+        entidad.deshacer();
+        this.listaCambiosIdx --;
+    }
+
+    agregarCambio(cambio){
+        // si agrego un cambio elimino todos los elementos posteriores al idx actual
+        let cantidadBorrar = this.listaCambios.length -1 - this.listaCambiosIdx;
+        this.listaCambios.splice((this.listaCambiosIdx + 1), cantidadBorrar);
+        //agrego el cambio como ultimo elemento
+        this.listaCambios.push(cambio);
+        this.listaCambiosIdx ++;
+    }
+
+    rehacer(){
+        this.listaCambiosIdx ++;
+        let entidad = this.listaCambios[this.listaCambiosIdx]
+        entidad.rehacer();
+    }
 }
 
 
@@ -284,11 +307,11 @@ class Entrenamiento{
 
     crearModeloReproduccion(mod){
         if(mod instanceof JugadorModel){
-            console.log("creacion jugador ", new ReproducirMovimientoJugador(mod, this))
+            //console.log("creacion jugador ", new ReproducirMovimientoJugador(mod, this))
             return new ReproducirMovimientoJugador(mod, this);
         }
         if(mod instanceof BochaModel){
-            console.log("creacion bocha", new ReproducirMovimientoBocha(mod, this))
+            //console.log("creacion bocha", new ReproducirMovimientoBocha(mod, this))
             return new ReproducirMovimientoBocha(mod, this);
         }
     }
@@ -326,9 +349,6 @@ class Entrenamiento{
                         l.push(md)
                     }
                 })
-                //console.log("modelos dinamicos", this.modelosDinamicos)
-                //console.log("modelos inactivos",l)
-                //
                 let colision = this.buscarColision(j);
                 if (colision){
                     this.resolverColision(j, colision);

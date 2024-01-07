@@ -1,14 +1,3 @@
-// TO DO
-/*
-- BUG (creacion ejercicio) Cuando se suelta la bocha sobre el jugador no se establece la posecion. Creo que tiene que ver con
-    que el evento mouse up ocurre al mismo tiempo que la actualizacion de la bocha en base al jugador, por lo tanto no hay posecion
-    
-- NEW (creacion ejercicio) Poder eliminar acciones, ctrl+z
-- NEW (creacion ejercicio) Hacer que las velocidades varien de acuerdo a el tiempo esperado de cada accion
-- NEW (reproduccion) Dibujar elementos estaticos
-- cambiar nombre de getActividad
-*/
-
 function calcularVersor2Puntos(p1X, p1Y, p2X, p2Y){
     v1 = p2X - p1X
     v2 = p2Y - p1Y
@@ -420,7 +409,6 @@ class ReproducirMovimientoJugador {
         if (this.accionActualIdx == this.model.acciones.length -1){
             // termino la ultima accion
             if(this.accionActual.getMovimientoFinalizado()){
-                console.log("se remueve accion", this.accionActual, this.accionActual.getMovimientoFinalizado())
                 this.removerAccionActual();
             }
         }
@@ -501,7 +489,6 @@ class ReproducirMovimientoJugador {
     }
 
     setElementoActual(elem){
-        console.log()
         this.elementoActual = elem;
     }
 
@@ -514,12 +501,10 @@ class ReproducirMovimientoJugador {
     }
 
     removerAccionActual(){
-        console.log("accion a null")
         this.setAccionActual(null);
     }
 
     setAccionActual(acc){
-        console.log("Cambio accion",acc)
         this.accionActual = acc;
     }
 
@@ -544,13 +529,16 @@ ReproducirMovimientoJugador.prototype.dibujarCirculo = dibujarCirculo;
 class Estado {
 
     constructor(fsm) {
-      if (this.constructor == Estado) {
-        throw new Error("Clase abstracta no puede ser instanciada");
-      }
-      this.fsm = fsm;
-      this.estaticoReproduccion = false;
-      this.visibleReproduccion = true;
-      this.objetoReproductor = null;
+        if (this.constructor == Estado) {
+            throw new Error("Clase abstracta no puede ser instanciada");
+        }
+        this.fsm = fsm;
+        this.estaticoReproduccion = false;
+        this.visibleReproduccion = true;
+        this.objetoReproductor = null;
+        this.restauradorActual = [];
+        this.restauradores = [];
+        this.restauradoresIdx = -1;
     }
   
     entrar() {
@@ -572,6 +560,38 @@ class Estado {
     mouseMove(){}
 
     mouseOut(){}
+
+    agregarRestaurador(){
+        // si agrego un cambio elimino todos los elementos posteriores al idx actual
+        let cantidadBorrar = this.restauradores.length -1 - this.restauradoresIdx;
+        this.restauradores.splice((this.restauradoresIdx + 1), cantidadBorrar);
+        this.restauradores.push(this.restauradorActual);
+        this.restauradoresIdx ++;
+        this.fsm.agregarCambio(this);
+        this.restauradorActual = [];
+    }
+
+    deshacer(){
+        let entidades = this.restauradores[this.restauradoresIdx];
+        entidades.forEach(rest => {
+            rest.deshacer();
+        });
+        this.restauradoresIdx --;
+    }
+
+    rehacer(){
+        this.restauradoresIdx ++;
+        let entidades = this.restauradores[this.restauradoresIdx];
+        entidades.slice().reverse().forEach(rest => {
+            rest.rehacer();
+        });
+    }
+
+    setRestauradorActual(rest){
+        if(rest){
+            this.restauradorActual.push(rest);
+        }
+    }
 
     salir(){
         throw new Error("Metodo 'salir()' debe ser implementado.");
@@ -600,6 +620,14 @@ class Estado {
     getObjetoReproductor(){
         return this.objetoReproductor;
     }
+
+    terminarRestauradores(){
+        if(this.restauradorActual.length > 0){
+            this.restauradorActual.forEach(rest => {
+                rest.setEstadoPosterior();
+            });
+        }    
+    }
 }
 
 class MovimientoLibreModel extends Estado{
@@ -615,6 +643,7 @@ class MovimientoLibreModel extends Estado{
         this.seleccionado = false;
         this.JugadorMovimiento = jugador;
         this.velocidad = velocidad || 0.1;
+        this.proximaAccion = null;
     }
 
     entrar(pos){
@@ -659,6 +688,14 @@ class MovimientoLibreModel extends Estado{
         this.simplificacionRecorrido();
         this.JugadorMovimiento.agregarAccion(this);
         this.fsm.terminarDibujo(this);
+    }
+
+    setProximaAccion(acc){
+        this.proximaAccion = acc;
+    }
+
+    getProximaAccion(){
+        return this.proximaAccion;
     }
 
     definirPosicionInicial(pos){
@@ -820,6 +857,7 @@ class MovimientoLibreView{
     agregarModelo(modelo){
         this.models.push(modelo);
     }
+
 }
 
 class JugadorModel extends Estado{
@@ -836,6 +874,9 @@ class JugadorModel extends Estado{
         this.seleccionado = true;
         this.acciones = [];
         this.elemento = null;
+        this.restauradorActual = [];
+        this.restauradores = [];
+        this.restauradoresIdx = -1;
     }
 
     mover(pos){
@@ -844,31 +885,34 @@ class JugadorModel extends Estado{
             this.acciones[0].definirPosicionInicial(pos);
         }
         if(this.elemento){
-            let posElem = this.posicionElemento();
-            this.elemento.mover(posElem);
+            this.actualizarPosicionElemento();
         }
-        /*else {
-            let bocha = this.fsm.bochaEnPosicion(pos);
-            if (bocha){
-                this.elemento = bocha
-                let posElem = this.posicionElemento();
-                this.elemento.mover(posElem);
-            }
-        }*/
+    }
 
+    actualizarPosicionElemento(){
+        let posElem = this.posicionElemento();
+        this.elemento.mover(posElem);
     }
 
     agregarAccion(accion){
-        this.acciones.push(accion)
+        if(this.acciones.length > 0){
+            this.acciones[(this.acciones.length -1)].setProximaAccion(accion);
+        }
+        this.acciones.push(accion);
+        
     }
 
     entrar(pos) {
         this.posicion = pos;
         this.radio = 25;
       }
+
+    setPosicion(pos){
+        this.posicion = pos;
+    }
     
     actualizar(pos) {
-        this.posicion = pos;
+        this.setPosicion(pos);
       }
   
     mouseDown(pos){
@@ -907,7 +951,6 @@ class JugadorModel extends Estado{
     }
 
     terminarMover(){
-        //this.dibujando = false;
         this.buscarElemento(this.posicion);
     }
 
@@ -934,8 +977,12 @@ class JugadorModel extends Estado{
         }
     }
 
-    obtenerPosicion(){
+    getPosicion(){
         return this.posicion;
+    }
+
+    getElemento(){
+        return this.elemento;
     }
 
     obtenerPosicionProxAccion(){
@@ -947,8 +994,13 @@ class JugadorModel extends Estado{
         return pos;
     }
 
-    agarrarElemento(elem){
+    setElemento(elem){
         this.elemento = elem;
+    }
+
+    agarrarElemento(elem){
+        this.restauradorActual.push(new RestauradorDeEstadoAgarrarBocha(this, elem));
+        this.setElemento(elem);
         return true;
     }
 
@@ -970,6 +1022,36 @@ class JugadorModel extends Estado{
             let posElem = this.posicionElemento();
             this.elemento.mover(posElem);
         }
+    }
+
+    setRestauradorActual(rest){
+        this.restauradorActual.push(rest);
+    }
+
+    agregarRestaurador(){
+        // si agrego un cambio elimino todos los elementos posteriores al idx actual
+        let cantidadBorrar = this.restauradores.length -1 - this.restauradoresIdx;
+        this.restauradores.splice((this.restauradoresIdx + 1), cantidadBorrar);
+        this.restauradores.push(this.restauradorActual);
+        this.restauradoresIdx ++;
+        this.fsm.agregarCambio(this);
+        this.restauradorActual = [];
+    }
+
+    deshacer(){
+        let entidades = this.restauradores[this.restauradoresIdx];
+        entidades.forEach(rest => {
+            rest.deshacer();
+        });
+        this.restauradoresIdx --;
+    }
+
+    rehacer(){
+        this.restauradoresIdx ++;
+        let entidades = this.restauradores[this.restauradoresIdx];
+        entidades.slice().reverse().forEach(rest => {
+            rest.rehacer();
+        });
     }
 
 }
@@ -1029,6 +1111,7 @@ class MovimientoRectoModel extends Estado{
         this.largo = 0;
         this.JugadorMovimiento = jugador;
         this.velocidad = velocidad || 1;
+        this.proximaAccion = null;
     
     }
 
@@ -1051,7 +1134,7 @@ class MovimientoRectoModel extends Estado{
 
     actualizar(pos){
         if (this.dibujando){
-            this.definirPosicionFinal(pos)
+            this.setPosicionFinal(pos)
             this.calcularLargo();
             this.calcularRotacion();
         }
@@ -1064,13 +1147,30 @@ class MovimientoRectoModel extends Estado{
 
     mover(pos){
         this.dibujando = true;
-        this.posFinal = pos;
+        this.setPosicionFinal(pos);
         this.calcularLargo();
         this.calcularRotacion();
     }
 
     terminarMover(){
         this.dibujando = false;
+        this.actualizarProximaAccion();
+    }
+
+    actualizarProximaAccion(){
+        console.log("cambiando posicion inicial prox accion 0")
+        if(this.proximaAccion){
+            this.proximaAccion.definirPosicionInicial(this.obtenerPosicionFinalMov());
+            console.log("cambiando posicion inicial prox accion")
+        }
+    }
+
+    setProximaAccion(acc){
+        this.proximaAccion = acc;
+    }
+
+    getProximaAccion(){
+        return this.proximaAccion;
     }
 
     obtenerPosicionInicial(){
@@ -1100,6 +1200,10 @@ class MovimientoRectoModel extends Estado{
     }
 
     definirPosicionFinal(pos){
+        this.setPosicionFinal(pos);
+    }
+
+    setPosicionFinal(pos){
         this.posFinal = pos;
     }
 
@@ -1211,8 +1315,23 @@ class Seleccionador extends Estado{
         if (elem){
             this.seleccionar(elem);
             this.mover = true;
+            this.elementoSeleccionado.setRestauradorActual(this.construirRestaurador());
         }
-      }
+    }
+    
+    construirRestaurador(){
+        if(this.elementoSeleccionado instanceof JugadorModel){
+            return new RestauradorDeEstadoMovimientoJugador(this.elementoSeleccionado);
+        }
+        if(this.elementoSeleccionado instanceof BochaModel){
+            return new RestauradorDeEstadoMovimientoBocha(this.elementoSeleccionado);
+        }
+        if(this.elementoSeleccionado instanceof ConoLineaModel){
+            return new RestauradorDeEstadoMovimientoCono(this.elementoSeleccionado);
+        }
+        return null;
+        
+    }
     
     mouseMove(pos){
         if (this.mover){
@@ -1224,6 +1343,8 @@ class Seleccionador extends Estado{
         if (this.mover){
             this.mover = false;
             this.elementoSeleccionado.terminarMover();
+            this.elementoSeleccionado.terminarRestauradores();
+            this.elementoSeleccionado.agregarRestaurador();
         }
         
     }
@@ -1247,6 +1368,17 @@ class PaseModel extends MovimientoRectoModel{
 
     obtenerPosicionFinalMov(){
         return this.obtenerPosicionInicial();
+    }
+
+    definirPosicionInicial(pos){
+        let posF = this.obtenerPosicionFinal();
+        this.posInicial = pos;
+        this.definirPosicionFinal(posF)
+        this.calcularLargo();
+        this.calcularRotacion();
+        if(this.proximaAccion){
+            this.proximaAccion.definirPosicionInicial(this.obtenerPosicionFinalMov());
+        }
     }
 }
 
@@ -1338,7 +1470,15 @@ class ConoLineaModel extends Estado{
     }
 
     entrar(pos){
+        this.setPosicionInicial(pos);
+    }
+
+    setPosicionInicial(pos){
         this.posicionInicial = pos;
+    }
+
+    getPosicionInicial(){
+        return this.posicionInicial;
     }
 
     mover(pos){
@@ -1359,12 +1499,17 @@ class ConoLineaModel extends Estado{
             this.moverEnParalelo(pos);
         }
         else if (this.idPosMovimiento == 0){
-            this.posicionInicial = pos;
+            this.setPosicionInicial(pos);
         }
         else{
             this.posicionFinal = pos;
         }
     }
+
+    esLinea(){
+        return this.posiciones.length > 1;
+    }
+    
 
     moverEnParalelo(pos){
         let deltaX = pos.x - this.posicionInicialMovimiento.x;
@@ -1404,7 +1549,7 @@ class ConoLineaModel extends Estado{
 
     actualizar(pos){
         if (this.dibujando){
-            this.definirPosicionFinal(pos);
+            this.setPosicionFinal(pos);
             this.calcularLargo();
         }
     }
@@ -1449,8 +1594,15 @@ class ConoLineaModel extends Estado{
         }
     }
 
-    definirPosicionFinal(pos){
+    setPosicionFinal(pos){
         this.posicionFinal = pos;
+    }
+
+    getPosicionFinal(){
+        if(! this.posicionFinal){
+            return {x:null, y:null}
+        }
+        return this.posicionFinal;
     }
 
     calcularLargo(){
@@ -1578,6 +1730,9 @@ class BochaModel extends Estado{
         this.seleccionado = false;
         this. dibujando =  true;
         this.estaticoReproduccion = false;
+        this.restauradorActual = [];
+        this.restauradores = [];
+        this.restauradoresIdx = -1;
     }
 
     entrar(pos) {
@@ -1612,19 +1767,32 @@ class BochaModel extends Estado{
         if (jug){
             let agarrado = jug.agarrarElemento(this);
             if (agarrado){
+                this.restauradorActual.push(new RestauradorDeEstadoDefinirPoseedor(this, jug));
                 this.definirPoseedor(jug);
                 this.posicion = jug.posicionElemento();
             }
         }
     }
 
+    getPosicion(){
+        return this.posicion;
+    }
+
     definirPoseedor(jug){
         this.poseedor = jug;
     }
 
+    getPoseedor(){
+        return this.poseedor;
+    }
+
+    setPosicion(pos){
+        this.posicion = pos;
+    }
+
     mover(pos){
         this.dibujando = true;
-        this.posicion = pos;
+        this.setPosicion(pos);
     }
 
     terminarMover(){
@@ -1667,7 +1835,6 @@ class BochaModel extends Estado{
         return this.estaticoReproduccion;
     }
 
-    
 }
 
 
@@ -1707,6 +1874,238 @@ class BochaView{
         context.stroke();
         context.closePath();
         context.restore();
+    }
+
+}
+
+class RestauradorDeEstado{
+    constructor(entidad){
+        if (this.constructor == RestauradorDeEstado){
+            throw new Error("Clase abstracta no puede ser instanciada");
+        }
+
+        this.entidad = entidad;
+        this.estadoPrevio = null;
+        this.estadoPosterior = null;
+    }
+
+    removerReferencias(){
+        throw new Error("Metodo 'removerReferencias()' debe ser implementado.");
+    }
+
+    setEstadoPrevio(){
+        throw new Error("Metodo 'setEstadoPrevio()' debe ser implementado.");
+    }
+
+    setEstadoPosterior(){
+        throw new Error("Metodo 'setEstadoPosterior()' debe ser implementado.");
+    }
+
+    deshacer(){
+        this.entidad.setPosicion(this.estadoPrevio.posicionActual);
+    }
+
+    rehacer(){
+        this.entidad.setPosicion(this.estadoPosterior.posicionActual);
+    }
+
+
+}
+
+class RestauradorDeEstadoMovimientoJugador extends RestauradorDeEstado{
+    constructor(entidad){
+        super(entidad);
+        this.setEstadoPrevio()
+    }
+    // las coliciones con elementos se realizan con el mouse up, por lo cual deberia revisar la posecion de elementos
+
+    setEstadoPrevio(){
+        let posicionPrevia = {x:null, y:null};
+        let elementoPrevio = null;
+        posicionPrevia.x = this.entidad.getPosicion().x;
+        posicionPrevia.y = this.entidad.getPosicion().y;
+        this.estadoPrevio = {posicionActual: posicionPrevia};
+    }
+
+    setEstadoPosterior(){
+        let posicionPosterior = {x:null, y:null};
+        posicionPosterior.x = this.entidad.getPosicion().x;
+        posicionPosterior.y = this.entidad.getPosicion().y;
+        this.estadoPosterior = {posicionActual: posicionPosterior};
+    }
+
+    deshacer(){
+        this.entidad.setPosicion(this.estadoPrevio.posicionActual);
+        if(this.entidad.getElemento()){
+            this.entidad.actualizarPosicionElemento()
+        }
+    }
+
+    rehacer(){
+        this.entidad.setPosicion(this.estadoPosterior.posicionActual);
+        if(this.entidad.getElemento()){
+            this.entidad.actualizarPosicionElemento();
+        }
+    }
+}
+
+class RestauradorDeEstadoMovimientoBocha extends RestauradorDeEstado{
+    constructor(entidad){
+        super(entidad);
+        this.setEstadoPrevio();
+    }
+    // las coliciones con elementos se realizan con el mouse up, por lo cual deberia revisar la posecion de elementos
+
+    setEstadoPrevio(){
+        let posicionPrevia = {x:null, y:null};
+        posicionPrevia.x = this.entidad.getPosicion().x;
+        posicionPrevia.y = this.entidad.getPosicion().y;
+        this.estadoPrevio = {posicionActual: posicionPrevia};
+    }
+
+    setEstadoPosterior(){
+        let posicionPosterior = {x:null, y:null};
+        posicionPosterior.x = this.entidad.getPosicion().x;
+        posicionPosterior.y = this.entidad.getPosicion().y;
+        this.estadoPosterior = {posicionActual: posicionPosterior};
+    }
+
+    deshacer(){
+        this.entidad.setPosicion(this.estadoPrevio.posicionActual);
+    }
+
+    rehacer(){
+        this.entidad.setPosicion(this.estadoPosterior.posicionActual);
+    }
+}
+
+class RestauradorDeEstadoMovimientoCono extends RestauradorDeEstado{
+    constructor(entidad){
+        super(entidad);
+        this.setEstadoPrevio();
+    }
+
+    setEstadoPrevio(){
+        let posicionInicialPrevia = {x:null, y:null};
+        let posicionFinalPrevia = null;
+        posicionInicialPrevia.x = this.entidad.getPosicionInicial().x;
+        posicionInicialPrevia.y = this.entidad.getPosicionInicial().y;
+        if(this.entidad.esLinea()){
+            posicionFinalPrevia = {x:null, y:null};
+            posicionFinalPrevia.x = this.entidad.getPosicionFinal().x;
+            posicionFinalPrevia.y = this.entidad.getPosicionFinal().y;
+        }
+        this.estadoPrevio = {posicionInicial: posicionInicialPrevia, 
+            posicionFinal:posicionFinalPrevia};
+    }
+
+    setEstadoPosterior(){
+        let posicionInicialPosterior = {x:null, y:null};
+        let posicionFinalPosterior = null;
+        posicionInicialPosterior.x = this.entidad.getPosicionInicial().x;
+        posicionInicialPosterior.y = this.entidad.getPosicionInicial().y;
+        if(this.entidad.esLinea()){
+            posicionFinalPosterior = {x:null, y:null};
+            posicionFinalPosterior.x = this.entidad.getPosicionFinal().x;
+            posicionFinalPosterior.y = this.entidad.getPosicionFinal().y;
+        }
+        
+        this.estadoPosterior = {posicionInicial: posicionInicialPosterior, posicionFinal:posicionFinalPosterior};
+    }
+
+    deshacer(){
+        this.entidad.setPosicionInicial(this.estadoPrevio.posicionInicial);
+        this.entidad.setPosicionFinal(this.estadoPrevio.posicionFinal);
+    }
+
+    rehacer(){
+        this.entidad.setPosicionInicial(this.estadoPosterior.posicionInicial);
+        this.entidad.setPosicionFinal(this.estadoPosterior.posicionFinal);
+    }
+}
+
+class RestauradorDeEstadoAgarrarBocha extends RestauradorDeEstado{
+    constructor(entidad, bocha){
+        //Se encarga de mover la bocha a su posicion antes y despues de de la posesion
+        //Tambien cambia el poseedor de la bocha y el elemento del jugador
+        super(entidad);
+        this.bocha = bocha;
+        this.setEstadoPrevio()
+    }
+
+    setEstadoPrevio(){
+        let posicionBochaPrevia = {x:null, y:null};
+        posicionBochaPrevia.x = this.bocha.getPosicion().x;
+        posicionBochaPrevia.y = this.bocha.getPosicion().y;
+        this.estadoPrevio = {posicionActual: posicionBochaPrevia};
+    }
+
+    setEstadoPosterior(){
+        let posicionBochaPosterior = {x:null, y:null};
+        posicionBochaPosterior.x = this.bocha.getPosicion().x;
+        posicionBochaPosterior.y = this.bocha.getPosicion().y;
+        this.estadoPosterior = {posicionActual: posicionBochaPosterior, elementoActual:this.bocha};
+    }
+
+    deshacer(){
+        //bocha a posicion anterior
+        this.bocha.setPosicion(this.estadoPrevio.posicionActual);
+        //bocha sin poseedor
+        this.bocha.definirPoseedor(null);
+        //jugador sin bocha
+        this.entidad.setElemento(null);
+    }
+
+    rehacer(){
+        //bocha a posicion posterior
+        this.bocha.setPosicion(this.estadoPosterior.posicionActual);
+        //bocha sin poseedor
+        this.bocha.definirPoseedor(this.entidad);
+        //jugador sin bocha
+        this.entidad.setElemento(this.bocha);
+    }
+
+}
+
+class RestauradorDeEstadoDefinirPoseedor extends RestauradorDeEstado{
+    constructor(entidad, jugador){
+        //Se encarga de mover la bocha a su posicion antes y despues de de la posesion
+        //Tambien cambia el poseedor de la bocha y el elemento del jugador
+        super(entidad);
+        this.jugador = jugador;
+        this.setEstadoPrevio()
+    }
+
+    setEstadoPrevio(){
+        let posicionBochaPrevia = {x:null, y:null};
+        posicionBochaPrevia.x = this.jugador.getPosicion().x;
+        posicionBochaPrevia.y = this.jugador.getPosicion().y;
+        this.estadoPrevio = {posicionActual: posicionBochaPrevia};
+    }
+
+    setEstadoPosterior(){
+        let posicionBochaPosterior = {x:null, y:null};
+        posicionBochaPosterior.x = this.jugador.getPosicion().x;
+        posicionBochaPosterior.y = this.jugador.getPosicion().y;
+        this.estadoPosterior = {posicionActual: posicionBochaPosterior, elementoActual:this.bocha};
+    }
+
+    deshacer(){
+        //bocha a posicion anterior
+        this.jugador.setPosicion(this.estadoPrevio.posicionActual);
+        //bocha sin poseedor
+        this.jugador.setElemento(null);
+        //jugador sin bocha
+        this.entidad.definirPoseedor(null);
+    }
+
+    rehacer(){
+        //bocha a posicion posterior
+        this.entidad.setPosicion(this.estadoPosterior.posicionActual);
+        //bocha sin poseedor
+        this.entidad.definirPoseedor(this.jugador);
+        //jugador sin bocha
+        this.jugador.setElemento(this.entidad);  
     }
 
 }
