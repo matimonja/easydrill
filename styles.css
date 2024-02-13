@@ -1,7 +1,47 @@
+*{
+    padding: 0;
+    margin: 0;
+}
 body {
     text-align: center;
     font-family: sans-serif;
 }
 canvas {
     background-color: black;
+    touch-action: none;
+}
+
+.btn-ctrl-panel
+{
+    max-width: 30px;
+    max-height: 30px;
+}
+
+.btn-creacion{
+    max-width: 40px;
+    max-height: 40px;
+}
+
+.btn {
+    padding: 0;
+    margin: 0;
+}
+
+.canvas-creacion{
+    width: 100%;
+}
+
+.canvas-reproduccion{
+    width: 100%;
+}
+
+
+.dropdown-menu{
+    --bs-dropdown-min-width: 2rem;
+    --bs-dropdown-item-padding-x: 0.25rem;
+    --bs-dropdown-item-padding-y: 0.2rem;
+}
+
+#slider-velocidad{
+    max-width: 90%;
 }
