@@ -528,17 +528,35 @@ ReproducirMovimientoJugador.prototype.dibujarCirculo = dibujarCirculo;
 
 class Estado {
 
-    constructor(fsm) {
+    constructor(fsm, id) {
         if (this.constructor == Estado) {
             throw new Error("Clase abstracta no puede ser instanciada");
         }
         this.fsm = fsm;
+        this.id = id;
         this.estaticoReproduccion = false;
         this.visibleReproduccion = true;
         this.objetoReproductor = null;
         this.restauradorActual = [];
         this.restauradores = [];
         this.restauradoresIdx = -1;
+        this.ultimoIdRestaurador = -1;
+    }
+
+    getId(){
+        return this.id;
+    }
+
+    getProximoIdRestaurador(){
+        return ++ this.ultimoIdRestaurador;
+    }
+
+    getClaseRender(){
+        throw new Error("Metodo 'getClaseRender()' debe ser implementado.");
+    }
+
+    getJuego(){
+        return this.fsm;
     }
   
     entrar() {
@@ -561,14 +579,30 @@ class Estado {
 
     mouseOut(){}
 
+    removerRestauradorActual(id){
+        let idx = this.restauradorActual.findIndex(e => {return e.getId() == id});
+        if(idx >= 0){
+            this.restauradorActual.splice(idx, 1);
+        }
+    }
+
     agregarRestaurador(){
-        // si agrego un cambio elimino todos los elementos posteriores al idx actual
-        let cantidadBorrar = this.restauradores.length -1 - this.restauradoresIdx;
-        this.restauradores.splice((this.restauradoresIdx + 1), cantidadBorrar);
-        this.restauradores.push(this.restauradorActual);
-        this.restauradoresIdx ++;
-        this.fsm.agregarCambio(this);
-        this.restauradorActual = [];
+        this.restauradorActual.forEach(res =>{
+            if(! res.hayCambio()){
+                this.removerRestauradorActual(res.getId());
+            }
+        })
+        if(this.restauradorActual.length > 0){
+            // si agrego un cambio elimino todos los elementos posteriores al idx actual
+            let cantidadBorrar = this.restauradores.length -1 - this.restauradoresIdx;
+            this.restauradores.splice((this.restauradoresIdx + 1), cantidadBorrar);
+            this.restauradores.push(this.restauradorActual);
+            this.restauradoresIdx ++;
+            if(this.restauradorActual.length > 0){
+                this.fsm.agregarCambio(this);
+            }
+            this.restauradorActual = [];
+        }
     }
 
     deshacer(){
@@ -588,9 +622,7 @@ class Estado {
     }
 
     setRestauradorActual(rest){
-        if(rest){
-            this.restauradorActual.push(rest);
-        }
+        this.restauradorActual.push(rest);
     }
 
     salir(){
@@ -628,11 +660,18 @@ class Estado {
             });
         }    
     }
+
+    borrar(){
+        let id = this.getProximoIdRestaurador();
+        this.setRestauradorActual(new RestauradorDeEstadoBorrar(this, id));
+        this.agregarRestaurador();
+        this.fsm.borrarElemento(this);
+    }
 }
 
 class MovimientoLibreModel extends Estado{
-    constructor(fsm, jugador, velocidad){
-        super(fsm);
+    constructor(fsm, id, jugador, velocidad){
+        super(fsm, id);
         this.posInicial = null;
         this.posFinal = null;
         this.posicionActual = null;
@@ -644,6 +683,15 @@ class MovimientoLibreModel extends Estado{
         this.JugadorMovimiento = jugador;
         this.velocidad = velocidad || 0.1;
         this.proximaAccion = null;
+        this.visibleReproduccion = false;
+    }
+
+    cambiarVelocidad(vel){
+        this.velocidad = vel * 0.001;
+    }
+
+    getClaseRender(){
+        return "MovimientoLibreView";
     }
 
     entrar(pos){
@@ -688,6 +736,10 @@ class MovimientoLibreModel extends Estado{
         this.simplificacionRecorrido();
         this.JugadorMovimiento.agregarAccion(this);
         this.fsm.terminarDibujo(this);
+        this.getProximoIdRestaurador();
+        let id = this.JugadorMovimiento.getProximoIdRestaurador();
+        this.JugadorMovimiento.setRestauradorActual(new RestauradorDeEstadoCreacion(this, id));
+        this.JugadorMovimiento.agregarRestaurador();
     }
 
     setProximaAccion(acc){
@@ -787,6 +839,11 @@ class MovimientoLibreModel extends Estado{
     esEstaticoReproduccion(){
         return true;
     }
+
+    borrar(){
+        this.JugadorMovimiento.borrarAccion(this);
+    }
+
 }
 
 
@@ -794,6 +851,13 @@ class MovimientoLibreView{
     constructor(){
         this.models = [];
         this.tamanoFlecha = 10;
+    }
+
+    removerModelo(id){
+        let idx = this.models.findIndex(e => {return e.getId() == id});
+        if(idx >= 0){
+            this.models.splice(idx, 1);
+        }
     }
 
     dibujar(context){
@@ -865,10 +929,10 @@ class JugadorModel extends Estado{
      * 
      * @param {Dibujante} fsm - recibe el objeto dibujante para poder comunicarse con el
      */
-    constructor(fsm){
-        super(fsm);
+    constructor(fsm, id){
+        super(fsm, id)
         this.posicion = null;
-        this.radio = null;
+        this.radio = 25;
         this.dibujando = false;
         this.color = "blue";
         this.seleccionado = true;
@@ -879,14 +943,26 @@ class JugadorModel extends Estado{
         this.restauradoresIdx = -1;
     }
 
+    cambiarColor(color){
+        this.color = color;
+    }
+
+    getClaseRender(){
+        return "JugadorView";
+    }
+
     mover(pos){
         this.actualizar(pos);
         if (this.acciones.length >0){
-            this.acciones[0].definirPosicionInicial(pos);
+            this.cambiarPosicionAccionInicial(pos);
         }
         if(this.elemento){
             this.actualizarPosicionElemento();
         }
+    }
+
+    cambiarPosicionAccionInicial(pos){
+        this.acciones[0].definirPosicionInicial(pos);
     }
 
     actualizarPosicionElemento(){
@@ -904,7 +980,7 @@ class JugadorModel extends Estado{
 
     entrar(pos) {
         this.posicion = pos;
-        this.radio = 25;
+        //this.radio = 25;
       }
 
     setPosicion(pos){
@@ -939,15 +1015,20 @@ class JugadorModel extends Estado{
     salir(){
         this.dibujando = false;
         this.fsm.terminarDibujo(this);
+        let id = this.getProximoIdRestaurador();
+        this.setRestauradorActual(new RestauradorDeEstadoCreacion(this, id));
+        this.agregarRestaurador();
         // terminar dibujo y avisar al dibujante
       }
 
     desSeleccionar(){
-        this.seleccionado = false
+        this.seleccionado = false;
+        this.fsm.desActivarMenuJugador();
     }
 
     seleccionar(){
         this.seleccionado = true;
+        this.fsm.activarMenuJugador();
     }
 
     terminarMover(){
@@ -999,7 +1080,7 @@ class JugadorModel extends Estado{
     }
 
     agarrarElemento(elem){
-        this.restauradorActual.push(new RestauradorDeEstadoAgarrarBocha(this, elem));
+        //
         this.setElemento(elem);
         return true;
     }
@@ -1017,6 +1098,8 @@ class JugadorModel extends Estado{
     buscarElemento(pos){
         let elem = this.fsm.bochaEnPosicion(pos, this.radio);
         if (elem){
+            let id = this.getProximoIdRestaurador();
+            this.restauradorActual.push(new RestauradorDeEstadoAgarrarBocha(this, elem, id));
             this.agarrarElemento(elem);
             elem.definirPoseedor(this);
             let posElem = this.posicionElemento();
@@ -1032,9 +1115,14 @@ class JugadorModel extends Estado{
         // si agrego un cambio elimino todos los elementos posteriores al idx actual
         let cantidadBorrar = this.restauradores.length -1 - this.restauradoresIdx;
         this.restauradores.splice((this.restauradoresIdx + 1), cantidadBorrar);
-        this.restauradores.push(this.restauradorActual);
-        this.restauradoresIdx ++;
-        this.fsm.agregarCambio(this);
+        this.restauradorActual = this.restauradorActual.filter((rest) => {return rest.hayCambio();});
+        if(this.restauradorActual.length > 0){
+            this.restauradores.push(this.restauradorActual);
+            this.restauradoresIdx ++;
+        }
+        if(this.restauradorActual.length > 0){
+            this.fsm.agregarCambio(this);
+        }
         this.restauradorActual = [];
     }
 
@@ -1054,6 +1142,45 @@ class JugadorModel extends Estado{
         });
     }
 
+    tieneAcciones(){
+        return this.acciones.length > 0;
+    }
+
+    borrarAccion(accion){
+        let id = accion.getId();
+        let idx = this.acciones.findIndex(e => {return e.getId() == id});
+        let cantidadBorrar = this.acciones.length - idx;
+        this.borrarAccionesDesde(idx, cantidadBorrar);
+        this.agregarRestaurador();
+
+
+        this.acciones.splice(idx, cantidadBorrar);
+
+    }
+
+    borrarAccionesDesde(idx, cantidadBorrar){
+        let accionesBorrar = this.acciones.slice().splice(idx, cantidadBorrar);
+        accionesBorrar.forEach(acc => {
+            let id = this.getProximoIdRestaurador();
+            this.setRestauradorActual(new RestauradorDeEstadoBorrar(acc, id));
+            this.fsm.borrarElemento(acc);
+        })
+    }
+
+    borrar(){
+        if(this.acciones.length > 0){
+            this.borrarAccionesDesde(0, this.acciones.length);
+        }
+        // sacar posecion bocha
+        if(this.elemento){
+            let id = this.getProximoIdRestaurador();
+            this.setRestauradorActual(new RestauradorDeEstadoBorrar(this.elemento, id));
+            this.fsm.borrarElemento(this.elemento);
+            //this.quitarElemento();
+        }
+        super.borrar();
+    }
+
 }
 
 /**
@@ -1063,6 +1190,13 @@ class JugadorModel extends Estado{
 class JugadorView{
     constructor(){
         this.models = []
+    }
+
+    removerModelo(id){
+        let idx = this.models.findIndex(e => {return e.getId() == id});
+        if(idx >= 0){
+            this.models.splice(idx, 1);
+        }
     }
 
     agregarModelo(modelo){
@@ -1101,8 +1235,8 @@ class JugadorView{
 JugadorView.prototype.dibujarCirculo = dibujarCirculo;
 
 class MovimientoRectoModel extends Estado{
-    constructor(fsm, jugador, velocidad){
-        super(fsm);
+    constructor(fsm, id, jugador, velocidad){
+        super(fsm, id);
         this.posInicial = null;
         this.posFinal = null;
         this.dibujando = true;
@@ -1112,7 +1246,16 @@ class MovimientoRectoModel extends Estado{
         this.JugadorMovimiento = jugador;
         this.velocidad = velocidad || 1;
         this.proximaAccion = null;
+        this.visibleReproduccion = false;
     
+    }
+
+    cambiarVelocidad(vel){
+        this.velocidad = vel * 0.01;
+    }
+
+    getClaseRender(){
+        return "MovimientoRectoView";
     }
 
     entrar(pos){
@@ -1143,6 +1286,9 @@ class MovimientoRectoModel extends Estado{
     salir(){
         this.JugadorMovimiento.agregarAccion(this);
         this.fsm.terminarDibujo(this);
+        let id = this.JugadorMovimiento.getProximoIdRestaurador();
+        this.JugadorMovimiento.setRestauradorActual(new RestauradorDeEstadoCreacion(this, id));
+        this.JugadorMovimiento.agregarRestaurador();
     }
 
     mover(pos){
@@ -1158,10 +1304,8 @@ class MovimientoRectoModel extends Estado{
     }
 
     actualizarProximaAccion(){
-        console.log("cambiando posicion inicial prox accion 0")
         if(this.proximaAccion){
             this.proximaAccion.definirPosicionInicial(this.obtenerPosicionFinalMov());
-            console.log("cambiando posicion inicial prox accion")
         }
     }
 
@@ -1244,6 +1388,10 @@ class MovimientoRectoModel extends Estado{
         return true;
     }
 
+    borrar(){
+        this.JugadorMovimiento.borrarAccion(this);
+    }
+
 }
 
 MovimientoRectoModel.prototype.calcularDistanciaPunto = pDistance;
@@ -1252,6 +1400,13 @@ class MovimientoRectoView{
     constructor(){
         this.models = [];
         this.tamanoFlecha = 10;
+    }
+
+    removerModelo(id){
+        let idx = this.models.findIndex(e => {return e.getId() == id});
+        if(idx >= 0){
+            this.models.splice(idx, 1);
+        }
     }
 
     dibujar(context){
@@ -1304,6 +1459,7 @@ class Seleccionador extends Estado{
         super(fsm);
         this.elementoSeleccionado = null;
         this.mover = false;
+        this.huboMovimiento = false;
     }
 
     mouseDown(pos){
@@ -1321,21 +1477,49 @@ class Seleccionador extends Estado{
     
     construirRestaurador(){
         if(this.elementoSeleccionado instanceof JugadorModel){
-            return new RestauradorDeEstadoMovimientoJugador(this.elementoSeleccionado);
+            let id = this.elementoSeleccionado.getProximoIdRestaurador();
+            return new RestauradorDeEstadoMovimientoJugador(this.elementoSeleccionado, id);
         }
         if(this.elementoSeleccionado instanceof BochaModel){
-            return new RestauradorDeEstadoMovimientoBocha(this.elementoSeleccionado);
+            let id = this.elementoSeleccionado.getProximoIdRestaurador();
+            return new RestauradorDeEstadoMovimientoBocha(this.elementoSeleccionado, id);
         }
         if(this.elementoSeleccionado instanceof ConoLineaModel){
-            return new RestauradorDeEstadoMovimientoCono(this.elementoSeleccionado);
+            let id = this.elementoSeleccionado.getProximoIdRestaurador();
+            return new RestauradorDeEstadoMovimientoCono(this.elementoSeleccionado, id);
+        }
+        if(this.elementoSeleccionado instanceof MovimientoRectoModel){
+            let id = this.elementoSeleccionado.getProximoIdRestaurador();
+            return new RestauradorDeEstadoPosicionFinalAccion(this.elementoSeleccionado, id);
         }
         return null;
         
+    }
+
+    cambiarVelocidad(vel){
+        this.elementoSeleccionado.cambiarVelocidad(vel);
+    }
+
+    cambiarColor(color){
+        this.elementoSeleccionado.cambiarColor(color);
+    }
+
+    activarMovimiento(){
+        this.huboMovimiento = true;
+    }
+
+    desactivarMovimiento(){
+        this.huboMovimiento = false;
+    }
+
+    getHuboMovimiento(){
+        return this.huboMovimiento;
     }
     
     mouseMove(pos){
         if (this.mover){
             this.elementoSeleccionado.mover(pos);
+            this.activarMovimiento();
         }
     }
 
@@ -1344,7 +1528,10 @@ class Seleccionador extends Estado{
             this.mover = false;
             this.elementoSeleccionado.terminarMover();
             this.elementoSeleccionado.terminarRestauradores();
+            //if(this.getHuboMovimiento()){
             this.elementoSeleccionado.agregarRestaurador();
+            //}
+            this.desactivarMovimiento();
         }
         
     }
@@ -1359,11 +1546,19 @@ class Seleccionador extends Estado{
         this.elementoSeleccionado = elem;
         this.elementoSeleccionado.seleccionar();
     }
+
+    borrar(){
+        this.elementoSeleccionado.borrar();
+    }
 }
 
 class PaseModel extends MovimientoRectoModel{
-    constructor(fms, jugador){
-        super(fms, jugador);
+    constructor(fsm, id, jugador){
+        super(fsm, id, jugador);
+    }
+
+    getClaseRender(){
+        return "PaseView" ;
     }
 
     obtenerPosicionFinalMov(){
@@ -1402,8 +1597,12 @@ class PaseView extends MovimientoRectoView{
 }
 
 class ConduccionRectaModel extends MovimientoRectoModel{
-    constructor(fms, jugador){
-        super(fms, jugador);
+    constructor(fsm, id, jugador){
+        super(fsm, id, jugador);
+    }
+
+    getClaseRender(){
+        return "ConduccionRectaView";
     }
 }
 
@@ -1427,8 +1626,12 @@ class ConduccionRectaView extends MovimientoRectoView{
 }
 
 class ConduccionLibreModel extends MovimientoLibreModel{
-    constructor(fms, jugador){
-        super(fms, jugador);
+    constructor(fsm, id, jugador){
+        super(fsm, id, jugador);
+    }
+
+    getClaseRender(){
+        return "ConduccionLibreView";
     }
 }
 
@@ -1452,8 +1655,8 @@ class ConduccionLibreView extends MovimientoLibreView{
 }
 
 class ConoLineaModel extends Estado{
-    constructor(fsm){
-        super(fsm);
+    constructor(fsm, id){
+        super(fsm, id);
         this.posicionInicial = null;
         this.posicionFinal = null;
         this.altura = 10;
@@ -1467,6 +1670,11 @@ class ConoLineaModel extends Estado{
         this.posiciones = [];
         this.idPosMovimiento = null;
         this.posicionInicialMovimiento = null;
+        this.estaticoReproduccion = true;
+    }
+
+    getClaseRender(){
+        return "ConoView";
     }
 
     entrar(pos){
@@ -1573,6 +1781,9 @@ class ConoLineaModel extends Estado{
 
     salir(){
         this.fsm.terminarDibujo(this);
+        let id = this.getProximoIdRestaurador();
+        this.setRestauradorActual(new RestauradorDeEstadoCreacion(this, id));
+        this.agregarRestaurador();
     }
 
     obtenerVerticeCono(pos){
@@ -1683,6 +1894,13 @@ class ConoView{
         })
     }
 
+    removerModelo(id){
+        let idx = this.models.findIndex(e => {return e.getId() == id});
+        if(idx >= 0){
+            this.models.splice(idx, 1);
+        }
+    }
+
     agregarModelo(modelo){
         this.models.push(modelo);
     }
@@ -1720,8 +1938,8 @@ class ConoView{
 }
 
 class BochaModel extends Estado{
-    constructor(fsm){
-        super(fsm);
+    constructor(fsm, id){
+        super(fsm, id);
         this.color = "yellow";
         this.radio = 8;
         this.posicion = null;
@@ -1735,6 +1953,10 @@ class BochaModel extends Estado{
         this.restauradoresIdx = -1;
     }
 
+    getClaseRender(){
+        return "BochaView";
+    }
+
     entrar(pos) {
         if (this.dibujando){
             this.posicion = pos;
@@ -1742,6 +1964,7 @@ class BochaModel extends Estado{
     }
 
     seleccionar(){
+        this.seleccionado = true;
         if (this.poseedor){
             this.poseedor.quitarElemento();
             this.poseedor = null;
@@ -1767,7 +1990,8 @@ class BochaModel extends Estado{
         if (jug){
             let agarrado = jug.agarrarElemento(this);
             if (agarrado){
-                this.restauradorActual.push(new RestauradorDeEstadoDefinirPoseedor(this, jug));
+                let id = this.getProximoIdRestaurador();
+                this.restauradorActual.push(new RestauradorDeEstadoDefinirPoseedor(this, jug, id));
                 this.definirPoseedor(jug);
                 this.posicion = jug.posicionElemento();
             }
@@ -1813,6 +2037,9 @@ class BochaModel extends Estado{
             this.dibujando = false;
         }
         this.fsm.terminarDibujo(this);
+        let id = this.getProximoIdRestaurador();
+        this.setRestauradorActual(new RestauradorDeEstadoCreacion(this, id));
+        this.agregarRestaurador();
     }
 
     hayColisionPunto(x, y, d=0){
@@ -1841,6 +2068,13 @@ class BochaModel extends Estado{
 class BochaView{
     constructor(){
         this.models = []
+    }
+
+    removerModelo(id){
+        let idx = this.models.findIndex(e => {return e.getId() == id});
+        if(idx >= 0){
+            this.models.splice(idx, 1);
+        }
     }
 
     agregarModelo(modelo){
@@ -1879,7 +2113,7 @@ class BochaView{
 }
 
 class RestauradorDeEstado{
-    constructor(entidad){
+    constructor(entidad, id){
         if (this.constructor == RestauradorDeEstado){
             throw new Error("Clase abstracta no puede ser instanciada");
         }
@@ -1887,6 +2121,11 @@ class RestauradorDeEstado{
         this.entidad = entidad;
         this.estadoPrevio = null;
         this.estadoPosterior = null;
+        this.id = id;
+    }
+
+    hayCambio(){
+        throw new Error("Metodo 'hayCambio()' debe ser implementado.");
     }
 
     removerReferencias(){
@@ -1907,6 +2146,10 @@ class RestauradorDeEstado{
 
     rehacer(){
         this.entidad.setPosicion(this.estadoPosterior.posicionActual);
+    }
+
+    getId(){
+        return this.id;
     }
 
 
@@ -1934,10 +2177,19 @@ class RestauradorDeEstadoMovimientoJugador extends RestauradorDeEstado{
         this.estadoPosterior = {posicionActual: posicionPosterior};
     }
 
+    hayCambio(){
+        let condition = ((this.estadoPrevio.posicionActual.x != this.estadoPosterior.posicionActual.x) || 
+        (this.estadoPrevio.posicionActual.y != this.estadoPosterior.posicionActual.y));
+        return condition;
+    }
+
     deshacer(){
         this.entidad.setPosicion(this.estadoPrevio.posicionActual);
         if(this.entidad.getElemento()){
-            this.entidad.actualizarPosicionElemento()
+            this.entidad.actualizarPosicionElemento();
+        }
+        if(this.entidad.tieneAcciones()){
+            this.entidad.cambiarPosicionAccionInicial(this.estadoPrevio.posicionActual);
         }
     }
 
@@ -1945,6 +2197,9 @@ class RestauradorDeEstadoMovimientoJugador extends RestauradorDeEstado{
         this.entidad.setPosicion(this.estadoPosterior.posicionActual);
         if(this.entidad.getElemento()){
             this.entidad.actualizarPosicionElemento();
+        }
+        if(this.entidad.tieneAcciones()){
+            this.entidad.cambiarPosicionAccionInicial(this.estadoPosterior.posicionActual);
         }
     }
 }
@@ -1976,6 +2231,12 @@ class RestauradorDeEstadoMovimientoBocha extends RestauradorDeEstado{
 
     rehacer(){
         this.entidad.setPosicion(this.estadoPosterior.posicionActual);
+    }
+
+    hayCambio(){
+        let condition = ((this.estadoPrevio.posicionActual.x != this.estadoPosterior.posicionActual.x) || 
+        (this.estadoPrevio.posicionActual.y != this.estadoPosterior.posicionActual.y));
+        return condition;
     }
 }
 
@@ -2022,6 +2283,14 @@ class RestauradorDeEstadoMovimientoCono extends RestauradorDeEstado{
         this.entidad.setPosicionInicial(this.estadoPosterior.posicionInicial);
         this.entidad.setPosicionFinal(this.estadoPosterior.posicionFinal);
     }
+
+    hayCambio(){
+        let condition = ((this.estadoPrevio.posicionInicial.x != this.estadoPosterior.posicionInicial.x) || 
+        (this.estadoPrevio.posicionInicial.y != this.estadoPosterior.posicionInicial.y) ||
+        (this.estadoPrevio.posicionFinal.x != this.estadoPosterior.posicionFinal.x) || 
+        (this.estadoPrevio.posicionFinal.y != this.estadoPosterior.posicionFinal.y));
+        return condition;
+    }
 }
 
 class RestauradorDeEstadoAgarrarBocha extends RestauradorDeEstado{
@@ -2065,6 +2334,10 @@ class RestauradorDeEstadoAgarrarBocha extends RestauradorDeEstado{
         this.entidad.setElemento(this.bocha);
     }
 
+    hayCambio(){
+        return true;
+    }
+
 }
 
 class RestauradorDeEstadoDefinirPoseedor extends RestauradorDeEstado{
@@ -2106,6 +2379,103 @@ class RestauradorDeEstadoDefinirPoseedor extends RestauradorDeEstado{
         this.entidad.definirPoseedor(this.jugador);
         //jugador sin bocha
         this.jugador.setElemento(this.entidad);  
+    }
+
+    hayCambio(){
+        return true;
+    }
+
+}
+
+class RestauradorDeEstadoPosicionFinalAccion extends RestauradorDeEstado{
+    constructor(entidad, id){
+        super(entidad);
+        this.setEstadoPrevio();
+        this.id = id;
+    }
+
+    hayCambio(){
+        let condition = ((this.estadoPrevio.posicionFinal.x != this.estadoPosterior.posicionFinal.x) || 
+        (this.estadoPrevio.posicionFinal.y != this.estadoPosterior.posicionFinal.y));
+        return condition;
+    }
+
+    removerReferencias(){
+        throw new Error("Metodo 'removerReferencias()' debe ser implementado.");
+    }
+
+    setEstadoPrevio(){
+        let posicionFinalPrevia = {x:null, y:null};
+        posicionFinalPrevia.x = this.entidad.obtenerPosicionFinal().x;
+        posicionFinalPrevia.y = this.entidad.obtenerPosicionFinal().y;
+        this.estadoPrevio = {posicionFinal: posicionFinalPrevia};
+    }
+
+    setEstadoPosterior(){
+        let posicionFinalPosterior = {x:null, y:null};
+        posicionFinalPosterior.x = this.entidad.obtenerPosicionFinal().x;
+        posicionFinalPosterior.y = this.entidad.obtenerPosicionFinal().y;
+        this.estadoPosterior = {posicionFinal: posicionFinalPosterior};
+    }
+
+    deshacer(){
+        this.entidad.mover(this.estadoPrevio.posicionFinal);
+        this.entidad.actualizarProximaAccion();
+    }
+
+    rehacer(){
+        this.entidad.mover(this.estadoPosterior.posicionFinal);
+        this.entidad.actualizarProximaAccion();
+    }
+
+
+}
+
+class RestauradorDeEstadoCreacion extends RestauradorDeEstado{
+    constructor(entidad){
+        super(entidad)
+        this.juego = this.entidad.getJuego();
+    }
+
+    hayCambio(){
+        return true;
+    }
+
+    removerReferencias(){
+        throw new Error("Metodo 'removerReferencias()' debe ser implementado.");
+    }
+
+    deshacer(){
+        this.juego.removerModelo(this.entidad.getId());
+    }
+
+    rehacer(){
+        this.juego.recrearModelo(this.entidad);
+    }
+
+
+}
+
+class RestauradorDeEstadoBorrar extends RestauradorDeEstadoCreacion{
+    constructor(entidad){
+        super(entidad)
+    }
+
+    deshacer(){
+        this.juego.recrearModelo(this.entidad);
+        this.recrearAccion();
+        //this.recrearPosesionBocha();
+    }
+
+    rehacer(){
+        this.juego.removerModelo(this.entidad.getId());
+    }
+
+    recrearAccion(){
+        let claseAcciones = ["MovimientoLibreModel", "MovimientoRectoModel", "PaseModel", "ConduccionLibreModel", "ConduccionRectaModel"]
+        if(claseAcciones.includes(this.entidad.constructor.name)){
+            this.entidad.JugadorMovimiento.agregarAccion(this.entidad);
+        }
     }
 
 }
