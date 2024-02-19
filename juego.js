@@ -227,6 +227,7 @@ class Dibujante{
 
     eventClick(event){
         let pos = this.getMousePos(this.canvas, event);
+        console.log(pos)
         this.mouseX = pos.x;
         this.mouseY = pos.y;
         if(this.escuchando){
@@ -645,6 +646,11 @@ ctrl_menu.inicializarCreacionEjercicio();
 var dibujanteEstatico = new Dibujante("creacionEntrenamiento", ctrl_menu); // Se crea el dibujante con el correspondiente canvas
 dibujanteEstatico.actualizarPizarra(); // Comienza el loop del dibujo de ejercicio
 var juego = new Entrenamiento("visorEntrenamiento", dibujanteEstatico);
+
+var canvas = document.getElementById("creacionEntrenamiento")
+canvas.style="";  // remove CSS scaling
+//canvas.width = document.body.clientWidth * 0.9;
+//canvas.height = document.body.clientHeight;
 
 
 function run(){

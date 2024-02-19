@@ -7,9 +7,10 @@ body {
     font-family: sans-serif;
 }
 canvas {
-    background-color: black;
+    background-color: darkblue;
     touch-action: none;
 }
+
 
 .btn-ctrl-panel
 {
@@ -29,11 +30,12 @@ canvas {
 
 .canvas-creacion{
     width: 100%;
+    max-width: 600;
 }
 
-.canvas-reproduccion{
+/*.canvas-reproduccion{
     width: 100%;
-}
+}*/
 
 
 .dropdown-menu{
