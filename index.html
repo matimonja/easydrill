@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pizarra Táctica Deportiva</title>
+    <link rel="stylesheet" href="./src/style.css">
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  </head>
+  <body>
+    <div id="app">
+      
+      <!-- Area del Juego (Canvas + Menú Secundario Flotante) -->
+      <div id="game-container">
+        
+        <!-- Menú Secundario (Izquierda, Colapsable) -->
+        <div id="secondary-menu" class="secondary-menu collapsed">
+            <div class="menu-header">
+                <span>Opciones</span>
+                <button id="btn-collapse-menu" class="icon-btn"><i class="fa-solid fa-chevron-left"></i></button>
+            </div>
+            <div class="menu-content">
+                <p class="placeholder-text">Configuraciones del elemento seleccionado...</p>
+                <!-- Aquí irán opciones extra -->
+            </div>
+        </div>
+        
+        <!-- Botón para abrir menú si está colapsado -->
+        <button id="btn-open-menu" class="floating-toggle"><i class="fa-solid fa-bars"></i></button>
+
+        <!-- Canvas -->
+        <canvas id="gameCanvas"></canvas>
+      </div>
+
+      <!-- Menú Principal (Inferior, Horizontal) -->
+      <div id="main-toolbar" class="main-toolbar">
+        
+        <!-- Sección 1: Modos (Edición/Reproducción) -->
+        <div class="toolbar-section section-modes">
+            <button id="btn-mode-edit" class="mode-btn active" title="Modo Edición">
+                <i class="fa-solid fa-pen-ruler"></i>
+            </button>
+            <button id="btn-mode-play" class="mode-btn" title="Modo Reproducción">
+                <i class="fa-solid fa-play"></i>
+            </button>
+        </div>
+
+        <div class="separator-vertical"></div>
+
+        <!-- Sección 2: Herramientas (Cambia según el modo) -->
+        <div class="toolbar-section section-tools">
+            
+            <!-- Herramientas de Edición -->
+            <div id="edit-tools-panel" class="tools-grid">
+                <button class="tool-btn active" id="tool-select" title="Seleccionar (V)">
+                    <i class="fa-solid fa-arrow-pointer"></i>
+                </button>
+                <button class="tool-btn" id="tool-player" title="Crear Jugador (P)">
+                    <i class="fa-solid fa-user"></i>
+                </button>
+                <button class="tool-btn" id="tool-shape" title="Formas (S)">
+                    <i class="fa-solid fa-shapes"></i>
+                </button>
+                <button class="tool-btn" id="tool-camera" title="Cámara (C)">
+                    <i class="fa-solid fa-camera"></i>
+                </button>
+                
+                <!-- Fila 2 -->
+                <button class="tool-btn" id="action-undo" title="Deshacer (Ctrl+Z)">
+                    <i class="fa-solid fa-rotate-left"></i>
+                </button>
+                <button class="tool-btn" id="action-redo" title="Rehacer (Ctrl+Y)">
+                    <i class="fa-solid fa-rotate-right"></i>
+                </button>
+            </div>
+
+            <!-- Herramientas de Reproducción -->
+            <div id="play-tools-panel" class="tools-grid hidden">
+                <div class="placeholder-msg">Controles de Animación</div>
+            </div>
+
+        </div>
+
+        <div class="separator-vertical"></div>
+
+        <!-- Sección 3: Propiedades Contextuales -->
+        <div class="toolbar-section section-properties">
+            <div id="properties-panel" class="properties-content">
+                <span class="placeholder-text-small">Seleccione una herramienta...</span>
+            </div>
+        </div>
+
+      </div>
+
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
