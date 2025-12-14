@@ -1,73 +1,42 @@
 import { Camera } from './Camera';
 import { Field } from '../entities/Field';
-import { Entity, Player } from '../entities/Player';
+import { Player } from '../entities/Player';
 import { BaseShape, RectangleShape, EllipseShape, TriangleShape, LineShape, FreehandShape } from '../entities/Shape';
-import { CommandManager, Command } from './CommandManager';
+import { BaseAction, ActionType, RunAction, PassAction, DribbleAction, ShootAction, TackleAction, TurnAction } from '../entities/Action';
+import { CommandManager } from './CommandManager';
+import { RemoveEntityCommand, AddEntityCommand, MoveEntityCommand, RemoveActionChainCommand } from './Commands';
+import { IGameContext, ToolType, ShapeType, Entity } from './Interfaces';
 
-// Commands Implementation
-class AddEntityCommand implements Command {
-  constructor(private game: Game, private entity: Entity) {}
-  execute() { this.game.addEntity(this.entity); }
-  undo() { this.game.removeEntity(this.entity); }
-}
+// Tools
+import { Tool } from '../tools/Tool';
+import { SelectTool } from '../tools/SelectTool';
+import { PlayerTool } from '../tools/PlayerTool';
+import { CameraTool } from '../tools/CameraTool';
+import { ShapeTool } from '../tools/ShapeTool';
+import { ActionTool } from '../tools/ActionTool';
 
-class RemoveEntityCommand implements Command {
-  constructor(private game: Game, private entity: Entity) {}
-  execute() { this.game.removeEntity(this.entity); }
-  undo() { this.game.addEntity(this.entity); }
-}
-
-class MoveEntityCommand implements Command {
-  constructor(
-    private entity: Entity, 
-    private oldX: number, 
-    private oldY: number, 
-    private newX: number, 
-    private newY: number
-  ) {}
-  execute() { this.entity.setPosition(this.newX, this.newY); }
-  undo() { this.entity.setPosition(this.oldX, this.oldY); }
-}
-
-type ToolType = 'select' | 'player' | 'camera' | 'shape';
-type ShapeType = 'rectangle' | 'circle' | 'triangle' | 'line' | 'freehand';
 type AppMode = 'edit' | 'play';
 
-export class Game {
-  private canvas: HTMLCanvasElement;
-  private ctx: CanvasRenderingContext2D;
-  private camera: Camera;
-  private field: Field;
-  private commandManager: CommandManager;
+export class Game implements IGameContext {
+  public canvas: HTMLCanvasElement;
+  public ctx: CanvasRenderingContext2D;
+  public camera: Camera;
+  public field: Field;
+  public commandManager: CommandManager;
   
-  private entities: Entity[] = [];
+  public entities: Entity[] = [];
   private selectedEntity: Entity | null = null;
   
+  // State Management
   private currentMode: AppMode = 'edit';
-  private currentTool: ToolType = 'select';
-  private currentShapeType: ShapeType = 'line'; 
+  private currentToolId: ToolType = 'select';
   
-  private isPanToolActive: boolean = false;
-  
-  // Drawing States
-  private isDrawing: boolean = false;
-  private drawStartPos: { x: number, y: number } | null = null;
-  private tempShape: BaseShape | null = null;
+  // Tool System
+  private tools: Map<ToolType, Tool> = new Map();
 
-  // Dragging States
-  private isDraggingEntity: boolean = false;
-  private dragStartPos: { x: number, y: number } | null = null;
-  private initialEntityPos: { x: number, y: number } | null = null;
-  private dragOffset: { x: number, y: number } | null = null; 
-
-  // Resizing States
-  private isResizing: boolean = false;
-  private activeHandleId: string | null = null;
-
-  // Camera Pan State
-  private isPanningCamera: boolean = false;
-  private lastMouseX: number = 0;
-  private lastMouseY: number = 0;
+  // Action UI State
+  private currentActionType: ActionType = 'run';
+  private currentActionLineType: 'straight' | 'freehand' = 'straight';
 
   constructor(canvasId: string) {
     const canvas = document.getElementById(canvasId) as HTMLCanvasElement;
@@ -76,21 +45,139 @@ export class Game {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d')!;
     
+    // Initialize Core Subsystems
     this.camera = new Camera(0, 0);
     this.field = new Field();
     this.commandManager = new CommandManager();
 
+    // Initialize Tools
+    this.tools.set('select', new SelectTool(this));
+    this.tools.set('player', new PlayerTool(this));
+    this.tools.set('camera', new CameraTool(this));
+    this.tools.set('shape', new ShapeTool(this));
+    this.tools.set('action', new ActionTool(this));
+
+    // Initial Setup
     this.setupUI();
     this.setupEvents();
     this.resize();
+    
+    // Activate default tool
+    this.setTool('select');
+
     window.addEventListener('resize', () => this.resize());
   }
 
+  // --- IGameContext Implementation ---
+
+  public addEntity(entity: Entity) {
+    this.entities.push(entity);
+  }
+
+  public removeEntity(entity: Entity) {
+    const index = this.entities.indexOf(entity);
+    if (index > -1) {
+      this.entities.splice(index, 1);
+    }
+    if (this.selectedEntity === entity) {
+      this.selectEntity(null);
+    }
+  }
+
+  public selectEntity(entity: Entity | null) {
+    if (this.selectedEntity) this.selectedEntity.isSelected = false;
+    this.selectedEntity = entity;
+    if (this.selectedEntity) this.selectedEntity.isSelected = true;
+    
+    if (this.currentMode === 'edit') {
+        this.updateSelectionUI();
+    }
+  }
+
+  public getSelectedEntity(): Entity | null {
+      return this.selectedEntity;
+  }
+
+  public setTool(toolId: ToolType) {
+    // Deactivate previous tool
+    if (this.currentToolId) {
+        this.tools.get(this.currentToolId)?.deactivate();
+    }
+
+    this.currentToolId = toolId;
+    
+    // Activate new tool
+    this.tools.get(toolId)?.activate();
+
+    // UI Updates
+    document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+    
+    let activeBtnId = '';
+    if (toolId === 'select') activeBtnId = 'tool-select';
+    if (toolId === 'player') activeBtnId = 'tool-player';
+    if (toolId === 'camera') activeBtnId = 'tool-camera';
+    if (toolId === 'shape') activeBtnId = 'tool-shape';
+    
+    if (activeBtnId) document.getElementById(activeBtnId)?.classList.add('active');
+
+    // Deselect entities if switching to creation tools to avoid confusion
+    if (toolId === 'camera' || toolId === 'shape') {
+        this.selectEntity(null);
+    }
+
+    this.updatePropertiesPanel(toolId);
+  }
+
+  // --- Input Handling (Delegated to Tools) ---
+
+  private setupEvents() {
+    this.canvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const zoomAmount = e.deltaY > 0 ? 0.9 : 1.1;
+      this.camera.zoomAt(zoomAmount, e.clientX, e.clientY, this.canvas);
+    });
+
+    this.canvas.addEventListener('mousedown', (e) => {
+        e.preventDefault(); 
+        this.tools.get(this.currentToolId)?.onMouseDown(e);
+    });
+    
+    window.addEventListener('mousemove', (e) => {
+        this.tools.get(this.currentToolId)?.onMouseMove(e);
+    });
+    
+    window.addEventListener('mouseup', (e) => {
+        this.tools.get(this.currentToolId)?.onMouseUp(e);
+    });
+
+    window.addEventListener('keydown', (e) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+          return;
+      }
+
+      if (this.currentMode === 'play') {
+          if (e.key.toLowerCase() === 'r') this.camera.toggleRotation();
+          return;
+      }
+
+      if (e.key === 'Delete' || e.key === 'Backspace') this.deleteSelected();
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') this.commandManager.undo();
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') this.commandManager.redo();
+      
+      if (e.key.toLowerCase() === 'v') this.setTool('select');
+      if (e.key.toLowerCase() === 'p') this.setTool('player');
+      if (e.key.toLowerCase() === 'c') this.setTool('camera');
+      if (e.key.toLowerCase() === 's') this.setTool('shape');
+      if (e.key.toLowerCase() === 'r') this.camera.toggleRotation();
+    });
+  }
+
+  // --- UI Management ---
+
   private setupUI() {
-    // --- Mode Buttons ---
     const btnModeEdit = document.getElementById('btn-mode-edit');
     const btnModePlay = document.getElementById('btn-mode-play');
-    
     const editToolsPanel = document.getElementById('edit-tools-panel');
     const playToolsPanel = document.getElementById('play-tools-panel');
 
@@ -102,37 +189,38 @@ export class Game {
         btnModePlay?.classList.remove('active');
         editToolsPanel?.classList.remove('hidden');
         playToolsPanel?.classList.add('hidden');
+        
+        // Restore Edit Tool
+        this.setTool('select');
         this.updateSelectionUI(); 
       } else {
         btnModeEdit?.classList.remove('active');
         btnModePlay?.classList.add('active');
         editToolsPanel?.classList.add('hidden');
         playToolsPanel?.classList.remove('hidden');
+        
         this.selectEntity(null); 
         this.updatePropertiesPanel(null);
+        
+        // In Play Mode, we effectively use the Camera Tool with Pan enabled
+        this.setTool('camera');
+        (this.tools.get('camera') as CameraTool).setPanEnabled(true);
       }
     };
 
     btnModeEdit?.addEventListener('click', () => switchMode('edit'));
     btnModePlay?.addEventListener('click', () => switchMode('play'));
 
-    // --- Tools ---
-    const btnSelect = document.getElementById('tool-select');
-    const btnPlayer = document.getElementById('tool-player');
-    const btnCamera = document.getElementById('tool-camera');
-    const btnShape = document.getElementById('tool-shape');
-    const btnUndo = document.getElementById('action-undo');
-    const btnRedo = document.getElementById('action-redo');
-
-    btnSelect?.addEventListener('click', () => this.setTool('select'));
-    btnPlayer?.addEventListener('click', () => this.setTool('player'));
-    btnCamera?.addEventListener('click', () => this.setTool('camera'));
-    btnShape?.addEventListener('click', () => this.setTool('shape'));
+    // Tool Buttons
+    document.getElementById('tool-select')?.addEventListener('click', () => this.setTool('select'));
+    document.getElementById('tool-player')?.addEventListener('click', () => this.setTool('player'));
+    document.getElementById('tool-camera')?.addEventListener('click', () => this.setTool('camera'));
+    document.getElementById('tool-shape')?.addEventListener('click', () => this.setTool('shape'));
     
-    btnUndo?.addEventListener('click', () => this.commandManager.undo());
-    btnRedo?.addEventListener('click', () => this.commandManager.redo());
+    document.getElementById('action-undo')?.addEventListener('click', () => this.commandManager.undo());
+    document.getElementById('action-redo')?.addEventListener('click', () => this.commandManager.redo());
 
-    // --- Secondary Menu ---
+    // Collapsible Menu
     const secondaryMenu = document.getElementById('secondary-menu');
     const btnCollapse = document.getElementById('btn-collapse-menu');
     const btnOpenMenu = document.getElementById('btn-open-menu');
@@ -155,69 +243,64 @@ export class Game {
     btnOpenMenu?.addEventListener('click', () => toggleMenu());
   }
 
-  private setTool(tool: ToolType) {
-    this.currentTool = tool;
-    this.isPanToolActive = false;
-
-    document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
-    
-    let activeBtnId = '';
-    if (tool === 'select') activeBtnId = 'tool-select';
-    if (tool === 'player') activeBtnId = 'tool-player';
-    if (tool === 'camera') activeBtnId = 'tool-camera';
-    if (tool === 'shape') activeBtnId = 'tool-shape';
-    
-    document.getElementById(activeBtnId)?.classList.add('active');
-
-    if (tool === 'camera' || tool === 'shape') {
-        this.selectEntity(null);
-    }
-
-    this.updatePropertiesPanel(tool);
-  }
-
   private updatePropertiesPanel(tool: ToolType | null) {
       const propertiesPanel = document.getElementById('properties-panel');
       if (!propertiesPanel) return;
-
       propertiesPanel.innerHTML = ''; 
 
       if (!tool) {
-         propertiesPanel.innerHTML = '<span class="placeholder-text-small">Reproduciendo...</span>';
+         if (this.currentMode === 'play') {
+             propertiesPanel.innerHTML = '<span class="placeholder-text-small">Modo Reproducción</span>';
+         }
          return;
       }
 
+      if (tool === 'action') {
+          if (this.selectedEntity instanceof Player) {
+             this.renderPlayerActionUI(propertiesPanel, this.selectedEntity);
+          } else {
+             propertiesPanel.innerHTML = '<span class="placeholder-text-small">Dibujando Acción...</span>';
+          }
+          return;
+      }
+
       if (tool === 'shape') {
+          const shapeTool = this.tools.get('shape') as ShapeTool;
+          
           propertiesPanel.innerHTML = `
              <div class="prop-info">
                 <span class="prop-label">Dibujar</span>
                 <span class="prop-value">Forma</span>
              </div>
-             <button class="prop-btn ${this.currentShapeType === 'line' ? 'active' : ''}" id="shape-line" title="Línea"><i class="fa-solid fa-slash"></i></button>
-             <button class="prop-btn ${this.currentShapeType === 'freehand' ? 'active' : ''}" id="shape-free" title="Libre"><i class="fa-solid fa-pencil"></i></button>
-             <button class="prop-btn ${this.currentShapeType === 'rectangle' ? 'active' : ''}" id="shape-rect" title="Rectángulo"><i class="fa-regular fa-square"></i></button>
-             <button class="prop-btn ${this.currentShapeType === 'circle' ? 'active' : ''}" id="shape-circle" title="Círculo/Óvalo"><i class="fa-regular fa-circle"></i></button>
-             <button class="prop-btn ${this.currentShapeType === 'triangle' ? 'active' : ''}" id="shape-tri" title="Triángulo"><i class="fa-solid fa-play fa-rotate-270"></i></button>
+             <button class="prop-btn" id="shape-line" title="Línea"><i class="fa-solid fa-slash"></i></button>
+             <button class="prop-btn" id="shape-free" title="Libre"><i class="fa-solid fa-pencil"></i></button>
+             <button class="prop-btn" id="shape-rect" title="Rectángulo"><i class="fa-regular fa-square"></i></button>
+             <button class="prop-btn" id="shape-circle" title="Círculo/Óvalo"><i class="fa-regular fa-circle"></i></button>
+             <button class="prop-btn" id="shape-tri" title="Triángulo"><i class="fa-solid fa-play fa-rotate-270"></i></button>
           `;
 
-          const setShape = (type: ShapeType) => {
-              this.currentShapeType = type;
-              this.updatePropertiesPanel('shape');
+          const setActiveBtn = (id: string) => {
+              propertiesPanel.querySelectorAll('.prop-btn').forEach(b => b.classList.remove('active-prop'));
+              document.getElementById(id)?.classList.add('active-prop');
           };
+          
+          setActiveBtn('shape-line'); 
 
-          document.getElementById('shape-line')?.addEventListener('click', () => setShape('line'));
-          document.getElementById('shape-free')?.addEventListener('click', () => setShape('freehand'));
-          document.getElementById('shape-rect')?.addEventListener('click', () => setShape('rectangle'));
-          document.getElementById('shape-circle')?.addEventListener('click', () => setShape('circle'));
-          document.getElementById('shape-tri')?.addEventListener('click', () => setShape('triangle'));
+          document.getElementById('shape-line')?.addEventListener('click', () => { shapeTool.setShapeType('line'); setActiveBtn('shape-line'); });
+          document.getElementById('shape-free')?.addEventListener('click', () => { shapeTool.setShapeType('freehand'); setActiveBtn('shape-free'); });
+          document.getElementById('shape-rect')?.addEventListener('click', () => { shapeTool.setShapeType('rectangle'); setActiveBtn('shape-rect'); });
+          document.getElementById('shape-circle')?.addEventListener('click', () => { shapeTool.setShapeType('circle'); setActiveBtn('shape-circle'); });
+          document.getElementById('shape-tri')?.addEventListener('click', () => { shapeTool.setShapeType('triangle'); setActiveBtn('shape-tri'); });
       
       } else if (tool === 'camera') {
+          const camTool = this.tools.get('camera') as CameraTool;
+          
           propertiesPanel.innerHTML = `
             <div class="prop-info">
                 <span class="prop-label">Controles de Cámara</span>
                 <span class="prop-value">Ajustes</span>
             </div>
-            <button class="prop-btn ${this.isPanToolActive ? 'active-prop' : ''}" id="cam-pan-toggle" title="Activar Paneo"><i class="fa-solid fa-hand"></i> Paneo</button>
+            <button class="prop-btn" id="cam-pan-toggle" title="Activar Paneo"><i class="fa-solid fa-hand"></i> Paneo</button>
             <button class="prop-btn" id="cam-zoom-out" title="Alejar"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
             <button class="prop-btn" id="cam-zoom-in" title="Acercar"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
             <button class="prop-btn" id="cam-rotate" title="Rotar Vista"><i class="fa-solid fa-rotate"></i> Rotar</button>
@@ -225,15 +308,21 @@ export class Game {
           `;
           
           const panBtn = document.getElementById('cam-pan-toggle');
-          if (panBtn && this.isPanToolActive) {
-              panBtn.style.backgroundColor = '#3b82f6';
-              panBtn.style.borderColor = '#60a5fa';
+          if (panBtn) {
+              const updatePanVisual = () => {
+                  if (camTool.isPanEnabled) {
+                      panBtn.classList.add('active-prop');
+                  } else {
+                      panBtn.classList.remove('active-prop');
+                  }
+              }
+              updatePanVisual();
+              
+              panBtn.addEventListener('click', () => {
+                  camTool.setPanEnabled(!camTool.isPanEnabled);
+                  updatePanVisual();
+              });
           }
-
-          document.getElementById('cam-pan-toggle')?.addEventListener('click', () => {
-              this.isPanToolActive = !this.isPanToolActive;
-              this.updatePropertiesPanel('camera');
-          });
 
           document.getElementById('cam-zoom-in')?.addEventListener('click', () => 
             this.camera.zoomAt(1.2, this.canvas.width/2, this.canvas.height/2, this.canvas)
@@ -255,44 +344,124 @@ export class Game {
       } else if (tool === 'select') {
           if (this.selectedEntity) {
               const p = this.selectedEntity;
-              let label = "Elemento";
-              let actionsHtml = '';
-
               if (p instanceof Player) {
-                  label = `Jugador #${p.number}`;
-                  actionsHtml = `
-                     <div class="separator-vertical" style="height: 20px; margin: 0 10px;"></div>
-                     <button class="prop-btn" title="Correr"><i class="fa-solid fa-person-running"></i></button>
-                     <button class="prop-btn" title="Conducir"><i class="fa-solid fa-hockey-puck"></i></button>
-                     <button class="prop-btn" title="Pase"><i class="fa-solid fa-share"></i></button>
-                     <button class="prop-btn" title="Tiro"><i class="fa-solid fa-bullseye"></i></button>
-                     <button class="prop-btn" title="Quitar"><i class="fa-solid fa-shield-halved"></i></button>
-                     <button class="prop-btn" title="Girar"><i class="fa-solid fa-rotate"></i></button>
-                  `;
+                  this.renderPlayerActionUI(propertiesPanel, p);
               } else if (p instanceof BaseShape) {
-                  label = "Forma";
+                  // Shape Selection UI
+                  propertiesPanel.innerHTML = `
+                     <div class="prop-info">
+                        <span class="prop-label">Selección</span>
+                        <span class="prop-value">Forma</span>
+                     </div>
+                     <div class="separator-vertical" style="height: 20px; margin: 0 10px;"></div>
+                     <button class="prop-btn danger" id="prop-delete" title="Eliminar"><i class="fa-solid fa-trash"></i> Eliminar</button>
+                  `;
+                  document.getElementById('prop-delete')?.addEventListener('click', () => this.deleteSelected());
+              } else if (p instanceof BaseAction) {
+                  // Action Selection UI
+                  propertiesPanel.innerHTML = `
+                     <div class="prop-info">
+                        <span class="prop-label">Selección</span>
+                        <span class="prop-value">Acción: ${p.type.toUpperCase()}</span>
+                     </div>
+                     <div class="separator-vertical" style="height: 20px; margin: 0 10px;"></div>
+                     <button class="prop-btn danger" id="prop-delete" title="Eliminar"><i class="fa-solid fa-trash"></i> Eliminar</button>
+                  `;
+                  document.getElementById('prop-delete')?.addEventListener('click', () => this.deleteSelected());
               }
-
-              propertiesPanel.innerHTML = `
-                 <div class="prop-info">
-                    <span class="prop-label">Selección</span>
-                    <span class="prop-value">${label}</span>
-                 </div>
-                 ${actionsHtml}
-                 <div class="separator-vertical" style="height: 20px; margin: 0 10px;"></div>
-                 <button class="prop-btn danger" id="prop-delete" title="Eliminar"><i class="fa-solid fa-trash"></i> Eliminar</button>
-              `;
-
-              document.getElementById('prop-delete')?.addEventListener('click', () => this.deleteSelected());
-
           } else {
               propertiesPanel.innerHTML = '<span class="placeholder-text-small">Seleccione un elemento para ver sus propiedades</span>';
           }
       }
   }
+
+  private renderPlayerActionUI(container: HTMLElement, player: Player) {
+      container.innerHTML = `
+         <div class="prop-info">
+            <span class="prop-label">Selección</span>
+            <span class="prop-value">Jugador #${player.number}</span>
+         </div>
+         <div class="separator-vertical" style="height: 20px; margin: 0 10px;"></div>
+         
+         <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+             <!-- Row 1: Actions -->
+             <div class="action-toolbar" style="display: flex; gap: 5px; justify-content: flex-start; flex-wrap: wrap;">
+                 <button class="prop-btn action-btn" data-action="run" title="Correr"><i class="fa-solid fa-person-running"></i></button>
+                 <button class="prop-btn action-btn" data-action="dribble" title="Conducir"><i class="fa-solid fa-hockey-puck"></i></button>
+                 <button class="prop-btn action-btn" data-action="pass" title="Pase"><i class="fa-solid fa-share"></i></button>
+                 <button class="prop-btn action-btn" data-action="shoot" title="Tiro"><i class="fa-solid fa-bullseye"></i></button>
+                 <button class="prop-btn action-btn" data-action="tackle" title="Quitar"><i class="fa-solid fa-shield-halved"></i></button>
+                 <button class="prop-btn action-btn" data-action="turn" title="Girar"><i class="fa-solid fa-rotate"></i></button>
+             </div>
+             
+             <!-- Row 2: Lines & Delete -->
+             <div style="display: flex; gap: 10px; align-items: center; justify-content: space-between;">
+                 <div style="display: flex; gap: 5px;">
+                     <button class="prop-btn line-type-btn" data-type="straight" title="Recta"><i class="fa-solid fa-slash"></i></button>
+                     <button class="prop-btn line-type-btn" data-type="freehand" title="Libre"><i class="fa-solid fa-pencil"></i></button>
+                 </div>
+                 <button class="prop-btn danger" id="prop-delete" title="Eliminar"><i class="fa-solid fa-trash"></i> Eliminar</button>
+             </div>
+         </div>
+      `;
+
+      // Highlights
+      const updateHighlights = () => {
+          const isActionTool = this.currentToolId === 'action';
+          
+          if (!isActionTool) {
+              container.querySelectorAll('.active-prop').forEach(el => el.classList.remove('active-prop'));
+              return;
+          }
+
+          const isInstantAction = this.currentActionType === 'turn' || this.currentActionType === 'tackle';
+
+          container.querySelectorAll('.action-btn').forEach(btn => {
+              btn.classList.toggle('active-prop', (btn as HTMLElement).dataset.action === this.currentActionType);
+          });
+          
+          container.querySelectorAll('.line-type-btn').forEach(btn => {
+              const b = btn as HTMLButtonElement;
+              b.classList.toggle('active-prop', b.dataset.type === this.currentActionLineType);
+              
+              if (isInstantAction) {
+                  b.style.opacity = '0.5';
+                  b.style.pointerEvents = 'none';
+              } else {
+                  b.style.opacity = '1';
+                  b.style.pointerEvents = 'auto';
+              }
+          });
+      };
+      updateHighlights();
+
+      // Listeners
+      container.querySelectorAll('.action-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+              this.currentActionType = (e.currentTarget as HTMLElement).dataset.action as ActionType;
+              this.activateActionTool(player); // This sets tool to 'action', triggering update
+          });
+      });
+
+      container.querySelectorAll('.line-type-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+              this.currentActionLineType = (e.currentTarget as HTMLElement).dataset.type as any;
+              this.activateActionTool(player);
+          });
+      });
+
+      document.getElementById('prop-delete')?.addEventListener('click', () => this.deleteSelected());
+  }
+
+  private activateActionTool(player: Player) {
+      const actionTool = this.tools.get('action') as ActionTool;
+      actionTool.setContext(player, this.currentActionType, this.currentActionLineType);
+      this.setTool('action');
+  }
   
-  private updateSelectionUI() {
-      this.updatePropertiesPanel(this.currentTool);
+  public updateSelectionUI() {
+      // Re-render properties panel for current tool (updates context sensitive buttons)
+      this.updatePropertiesPanel(this.currentToolId);
       this.updateSecondaryMenu();
 
       const secondaryMenu = document.getElementById('secondary-menu');
@@ -432,13 +601,115 @@ export class Game {
                   <textarea id="player-desc" class="menu-input" rows="3">${player.description}</textarea>
               </div>
           `;
+      } else if (p instanceof BaseAction) {
+          const action = p;
+          html += `
+              <div class="menu-control-group">
+                  <label class="menu-label">Tipo</label>
+                  <input type="text" class="menu-input" value="${action.type.toUpperCase()}" disabled>
+              </div>
+              <div class="menu-control-group">
+                  <label class="menu-label">Pre-Evento</label>
+                  <input type="text" id="action-preevent" class="menu-input" value="${action.config.preEvent}">
+              </div>
+              <div class="menu-control-group">
+                  <label class="menu-label">Post-Evento</label>
+                  <input type="text" id="action-postevent" class="menu-input" value="${action.config.postEvent}">
+              </div>
+          `;
+          
+          if (p.pathType === 'freehand') {
+              html += `
+                  <div class="menu-control-group">
+                      <label class="menu-label">Suavizado: <span id="action-smooth-val">${action.smoothingFactor}</span></label>
+                      <input type="range" id="action-smooth" class="menu-input" min="1" max="20" step="1" value="${action.smoothingFactor}">
+                  </div>
+              `;
+          }
+
+          // Specific Action Configs
+          const hasSpeed = (p instanceof RunAction || p instanceof PassAction || p instanceof ShootAction || p instanceof DribbleAction);
+          
+          if (hasSpeed) {
+              const speedVal = (p as any).speed;
+              html += `
+                  <div class="menu-control-group checkbox-wrapper">
+                      <input type="checkbox" id="action-speed-check" ${speedVal !== null ? 'checked' : ''}>
+                      <label class="menu-label" for="action-speed-check">Velocidad</label>
+                  </div>
+                  <div class="menu-control-group" id="container-speed" style="${speedVal !== null ? '' : 'opacity: 0.5; pointer-events: none;'}">
+                      <label class="menu-label">Valor: <span id="speed-val">${speedVal || 50}</span>%</label>
+                      <input type="range" id="action-speed-val" class="menu-input" min="0" max="100" value="${speedVal || 50}">
+                  </div>
+              `;
+          }
+
+          if (p instanceof PassAction) {
+              html += `
+                  <div class="menu-control-group">
+                      <label class="menu-label">Gesto Técnico</label>
+                      <select id="action-gesture" class="menu-select">
+                          <option value="push" ${p.gesture === 'push' ? 'selected' : ''}>Push</option>
+                          <option value="pegada" ${p.gesture === 'pegada' ? 'selected' : ''}>Pegada</option>
+                          <option value="barrida" ${p.gesture === 'barrida' ? 'selected' : ''}>Barrida</option>
+                          <option value="flick" ${p.gesture === 'flick' ? 'selected' : ''}>Flick</option>
+                      </select>
+                  </div>
+              `;
+          }
+
+          if (p instanceof ShootAction) {
+               html += `
+                  <div class="menu-control-group">
+                      <label class="menu-label">Gesto Técnico</label>
+                      <select id="action-gesture" class="menu-select">
+                          <option value="push" ${p.gesture === 'push' ? 'selected' : ''}>Push</option>
+                          <option value="pegada" ${p.gesture === 'pegada' ? 'selected' : ''}>Pegada</option>
+                          <option value="barrida" ${p.gesture === 'barrida' ? 'selected' : ''}>Barrida</option>
+                          <option value="flick" ${p.gesture === 'flick' ? 'selected' : ''}>Flick</option>
+                      </select>
+                  </div>
+              `;
+          }
+
+          if (p instanceof DribbleAction) {
+               html += `
+                  <div class="menu-control-group">
+                      <label class="menu-label">Tipo Conducción</label>
+                      <select id="action-dribble-type" class="menu-select">
+                          <option value="derecho" ${p.dribbleType === 'derecho' ? 'selected' : ''}>Derecho</option>
+                          <option value="reves" ${p.dribbleType === 'reves' ? 'selected' : ''}>Revés</option>
+                          <option value="aerea" ${p.dribbleType === 'aerea' ? 'selected' : ''}>Aérea</option>
+                      </select>
+                  </div>
+              `;
+          }
+
+          if (p instanceof TackleAction) {
+               html += `
+                  <div class="menu-control-group">
+                      <label class="menu-label">Radio: <span id="radius-val">${p.radius}</span>px</label>
+                      <input type="range" id="action-radius" class="menu-input" min="10" max="100" step="1" value="${p.radius}">
+                  </div>
+              `;
+          }
+
+          if (p instanceof TurnAction) {
+               html += `
+                  <div class="menu-control-group">
+                      <label class="menu-label">Ángulo: <span id="angle-val">${p.angle}</span>°</label>
+                      <input type="range" id="action-angle" class="menu-input" min="-360" max="360" step="5" value="${p.angle}">
+                  </div>
+              `;
+          }
       }
 
       menuContent.innerHTML = html;
 
       // --- LISTENERS ---
 
-      // Shared Color Listeners
+      // ... existing listeners ...
+
       document.querySelectorAll('.color-swatch').forEach(swatch => {
           swatch.addEventListener('click', (e) => {
               const color = (e.target as HTMLElement).dataset.color;
@@ -526,299 +797,113 @@ export class Game {
           document.getElementById('player-desc')?.addEventListener('input', (e) => {
               player.description = (e.target as HTMLTextAreaElement).value;
           });
+      } else if (p instanceof BaseAction) {
+          document.getElementById('action-preevent')?.addEventListener('input', (e) => {
+              p.config.preEvent = (e.target as HTMLInputElement).value;
+          });
+          document.getElementById('action-postevent')?.addEventListener('input', (e) => {
+              p.config.postEvent = (e.target as HTMLInputElement).value;
+          });
+          
+          if (p.pathType === 'freehand') {
+              const smoothRange = document.getElementById('action-smooth');
+              const smoothVal = document.getElementById('action-smooth-val');
+              smoothRange?.addEventListener('input', (e) => {
+                  const val = parseInt((e.target as HTMLInputElement).value);
+                  p.smoothingFactor = val;
+                  if (smoothVal) smoothVal.textContent = val.toString();
+              });
+          }
+
+          // New Listeners
+          const action = p as any; // Cast for dynamic access
+
+          const speedCheck = document.getElementById('action-speed-check') as HTMLInputElement;
+          const speedContainer = document.getElementById('container-speed');
+          const speedVal = document.getElementById('action-speed-val') as HTMLInputElement;
+          const speedDisplay = document.getElementById('speed-val');
+
+          if (speedCheck) {
+              speedCheck.addEventListener('change', (e) => {
+                  const checked = (e.target as HTMLInputElement).checked;
+                  if (checked) {
+                      action.speed = parseInt(speedVal.value);
+                      if (speedContainer) {
+                          speedContainer.style.opacity = '1';
+                          speedContainer.style.pointerEvents = 'auto';
+                      }
+                  } else {
+                      action.speed = null;
+                      if (speedContainer) {
+                          speedContainer.style.opacity = '0.5';
+                          speedContainer.style.pointerEvents = 'none';
+                      }
+                  }
+              });
+          }
+          
+          if (speedVal) {
+              speedVal.addEventListener('input', (e) => {
+                  const val = parseInt((e.target as HTMLInputElement).value);
+                  action.speed = val;
+                  if (speedDisplay) speedDisplay.textContent = val.toString();
+              });
+          }
+
+          document.getElementById('action-gesture')?.addEventListener('change', (e) => {
+              if (p instanceof PassAction || p instanceof ShootAction) {
+                   p.gesture = (e.target as HTMLSelectElement).value;
+              }
+          });
+
+          document.getElementById('action-dribble-type')?.addEventListener('change', (e) => {
+              if (p instanceof DribbleAction) {
+                   p.dribbleType = (e.target as HTMLSelectElement).value;
+              }
+          });
+
+           const radiusRange = document.getElementById('action-radius');
+           if (radiusRange) {
+               radiusRange.addEventListener('input', (e) => {
+                   if (p instanceof TackleAction) {
+                       p.radius = parseInt((e.target as HTMLInputElement).value);
+                       document.getElementById('radius-val')!.textContent = p.radius.toString();
+                   }
+               });
+           }
+
+           const angleRange = document.getElementById('action-angle');
+           if (angleRange) {
+               angleRange.addEventListener('input', (e) => {
+                   if (p instanceof TurnAction) {
+                       p.angle = parseInt((e.target as HTMLInputElement).value);
+                       document.getElementById('angle-val')!.textContent = p.angle.toString();
+                   }
+               });
+           }
       }
   }
 
-  private setupEvents() {
-    this.canvas.addEventListener('wheel', (e) => {
-      e.preventDefault();
-      const zoomAmount = e.deltaY > 0 ? 0.9 : 1.1;
-      this.camera.zoomAt(zoomAmount, e.clientX, e.clientY, this.canvas);
-    });
-
-    this.canvas.addEventListener('mousedown', (e) => this.handleMouseDown(e));
-    window.addEventListener('mousemove', (e) => this.handleMouseMove(e));
-    window.addEventListener('mouseup', (e) => this.handleMouseUp(e));
-
-    window.addEventListener('keydown', (e) => {
-      const target = e.target as HTMLElement;
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
-          return;
-      }
-
-      if (this.currentMode === 'play') {
-          if (e.key.toLowerCase() === 'r') this.camera.toggleRotation();
-          return;
-      }
-
-      if (e.key === 'Delete' || e.key === 'Backspace') this.deleteSelected();
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') this.commandManager.undo();
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') this.commandManager.redo();
-      
-      if (e.key.toLowerCase() === 'v') this.setTool('select');
-      if (e.key.toLowerCase() === 'p') this.setTool('player');
-      if (e.key.toLowerCase() === 'c') this.setTool('camera');
-      if (e.key.toLowerCase() === 's') this.setTool('shape');
-      if (e.key.toLowerCase() === 'r') this.camera.toggleRotation();
-    });
-  }
-
-  private handleMouseDown(e: MouseEvent) {
-    const rect = this.canvas.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-
-    const worldPos = this.camera.screenToWorld(mouseX, mouseY, this.canvas);
-    
-    // Pan Logic
-    const canPan = this.currentMode === 'play' || (this.currentTool === 'camera' && this.isPanToolActive);
-    if (canPan) {
-         this.isPanningCamera = true;
-         this.lastMouseX = e.clientX;
-         this.lastMouseY = e.clientY;
-         return;
-    }
-
-    // Handle Resize/Rotate Click
-    if (this.currentTool === 'select' && this.selectedEntity instanceof BaseShape) {
-        const handles = this.selectedEntity.getHandles();
-        const inverseScale = 1 / this.camera.zoom;
-        const handleRadius = 10 * inverseScale; // Increased hit area
-
-        const dx = worldPos.x - this.selectedEntity.x;
-        const dy = worldPos.y - this.selectedEntity.y;
-        const cos = Math.cos(-this.selectedEntity.rotation);
-        const sin = Math.sin(-this.selectedEntity.rotation);
-        const localX = dx * cos - dy * sin;
-        const localY = dx * sin + dy * cos;
-
-        for (const h of handles) {
-            if (Math.abs(localX - h.x) < handleRadius && Math.abs(localY - h.y) < handleRadius) {
-                this.isResizing = true;
-                this.activeHandleId = h.id;
-                return; 
-            }
-        }
-    }
-
-    // Shape Drawing Logic
-    if (this.currentTool === 'shape') {
-        this.isDrawing = true;
-        this.drawStartPos = { x: worldPos.x, y: worldPos.y };
-        
-        if (this.currentShapeType === 'rectangle') {
-            this.tempShape = new RectangleShape(worldPos.x, worldPos.y);
-        } else if (this.currentShapeType === 'circle') {
-            this.tempShape = new EllipseShape(worldPos.x, worldPos.y);
-        } else if (this.currentShapeType === 'triangle') {
-            this.tempShape = new TriangleShape(worldPos.x, worldPos.y);
-            // Zero points to prevent default triangle creation
-            (this.tempShape as TriangleShape).points = [{x:0, y:0}, {x:0, y:0}, {x:0, y:0}];
-        } else if (this.currentShapeType === 'line') {
-            this.tempShape = new LineShape(worldPos.x, worldPos.y);
-        } else if (this.currentShapeType === 'freehand') {
-            this.tempShape = new FreehandShape(worldPos.x, worldPos.y);
-            (this.tempShape as FreehandShape).points.push({x: 0, y: 0});
-        }
-        return;
-    }
-
-    if (this.currentTool === 'player') {
-      const newPlayer = new Player(worldPos.x, worldPos.y, (this.entities.length + 1).toString());
-      this.commandManager.execute(new AddEntityCommand(this, newPlayer));
-      this.selectEntity(newPlayer);
-      this.setTool('select');
-      return;
-    }
-
-    if (this.currentTool === 'select') {
-      const clickedEntity = this.entities.slice().reverse().find(ent => ent.containsPoint(worldPos.x, worldPos.y));
-      
-      if (clickedEntity) {
-        this.selectEntity(clickedEntity);
-        this.isDraggingEntity = true;
-        this.dragStartPos = { x: worldPos.x, y: worldPos.y };
-        this.initialEntityPos = { x: clickedEntity.x, y: clickedEntity.y };
-        
-        this.dragOffset = {
-            x: clickedEntity.x - worldPos.x,
-            y: clickedEntity.y - worldPos.y
-        };
-      } else {
-        this.selectEntity(null);
-      }
-    }
-  }
-
-  private handleMouseMove(e: MouseEvent) {
-    const rect = this.canvas.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-
-    // Drawing Update
-    if (this.isDrawing && this.tempShape && this.drawStartPos) {
-        const worldPos = this.camera.screenToWorld(mouseX, mouseY, this.canvas);
-        const dx = worldPos.x - this.drawStartPos.x;
-        const dy = worldPos.y - this.drawStartPos.y;
-
-        if (this.tempShape instanceof RectangleShape) {
-            this.tempShape.width = Math.abs(dx);
-            this.tempShape.height = Math.abs(dy);
-            this.tempShape.x = this.drawStartPos.x + dx / 2;
-            this.tempShape.y = this.drawStartPos.y + dy / 2;
-        } else if (this.tempShape instanceof EllipseShape) {
-            const halfW = dx / 2;
-            const halfH = dy / 2;
-            this.tempShape.x = this.drawStartPos.x + halfW;
-            this.tempShape.y = this.drawStartPos.y + halfH;
-            this.tempShape.radiusX = Math.abs(halfW);
-            this.tempShape.radiusY = Math.abs(halfH);
-        } else if (this.tempShape instanceof TriangleShape) {
-            const halfW = dx / 2;
-            const halfH = dy / 2;
-            this.tempShape.x = this.drawStartPos.x + halfW;
-            this.tempShape.y = this.drawStartPos.y + halfH;
-            
-            this.tempShape.points = [
-                { x: 0, y: -halfH },
-                { x: halfW, y: halfH },
-                { x: -halfW, y: halfH }
-            ];
-        } else if (this.tempShape instanceof LineShape) {
-            this.tempShape.endX = dx;
-            this.tempShape.endY = dy;
-        } else if (this.tempShape instanceof FreehandShape) {
-             this.tempShape.points.push({x: dx, y: dy});
-        }
-    }
-
-    // Resizing/Rotation Update
-    if (this.isResizing && this.selectedEntity instanceof BaseShape && this.activeHandleId) {
-        const worldPos = this.camera.screenToWorld(mouseX, mouseY, this.canvas);
-        
-        if (this.activeHandleId === 'rotate') {
-             const dx = worldPos.x - this.selectedEntity.x;
-             const dy = worldPos.y - this.selectedEntity.y;
-             this.selectedEntity.rotation = Math.atan2(dy, dx) + Math.PI / 2;
-        } else {
-             const dx = worldPos.x - this.selectedEntity.x;
-             const dy = worldPos.y - this.selectedEntity.y;
-             const cos = Math.cos(-this.selectedEntity.rotation);
-             const sin = Math.sin(-this.selectedEntity.rotation);
-             const localX = dx * cos - dy * sin;
-             const localY = dx * sin + dy * cos;
-
-             this.selectedEntity.resize(this.activeHandleId, localX, localY);
-        }
-    }
-
-    // Dragging Update
-    if (this.isDraggingEntity && this.selectedEntity && !this.isResizing && this.dragOffset) {
-      const worldPos = this.camera.screenToWorld(mouseX, mouseY, this.canvas);
-      // Use offset to keep relative position
-      this.selectedEntity.setPosition(worldPos.x + this.dragOffset.x, worldPos.y + this.dragOffset.y);
-    }
-
-    if (this.isPanningCamera) {
-      const dx = e.clientX - this.lastMouseX;
-      const dy = e.clientY - this.lastMouseY;
-      this.panCamera(dx, dy);
-      this.lastMouseX = e.clientX;
-      this.lastMouseY = e.clientY;
-    }
-  }
-
-  private handleMouseUp(e: MouseEvent) {
-    if (this.isDrawing && this.tempShape) {
-        // Validation: Check if shape has minimal size
-        let isValid = true;
-        if (this.tempShape instanceof RectangleShape && (this.tempShape.width < 1 || this.tempShape.height < 1)) isValid = false;
-        if (this.tempShape instanceof EllipseShape && (this.tempShape.radiusX < 1 || this.tempShape.radiusY < 1)) isValid = false;
-        if (this.tempShape instanceof LineShape && this.tempShape.endX === 0 && this.tempShape.endY === 0) isValid = false;
-        // Triangle check
-        if (this.tempShape instanceof TriangleShape) {
-             const p = this.tempShape.points;
-             const minX = Math.min(...p.map(pt=>pt.x));
-             const maxX = Math.max(...p.map(pt=>pt.x));
-             if (maxX - minX < 1) isValid = false;
-        }
-
-        if (isValid) {
-            this.commandManager.execute(new AddEntityCommand(this, this.tempShape));
-            this.selectEntity(this.tempShape);
-        }
-        
-        this.tempShape = null;
-        this.isDrawing = false;
-        this.setTool('select'); 
-    }
-
-    if (this.isResizing) {
-        this.isResizing = false;
-        this.activeHandleId = null;
-    }
-
-    if (this.isDraggingEntity && this.selectedEntity && this.initialEntityPos && !this.isResizing) {
-      const dx = this.selectedEntity.x - this.initialEntityPos.x;
-      const dy = this.selectedEntity.y - this.initialEntityPos.y;
-      
-      if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
-        this.commandManager.execute(new MoveEntityCommand(
-          this.selectedEntity, 
-          this.initialEntityPos.x, 
-          this.initialEntityPos.y,
-          this.selectedEntity.x,
-          this.selectedEntity.y
-        ));
-      }
-    }
-
-    this.isDraggingEntity = false;
-    this.isPanningCamera = false;
-    this.dragStartPos = null;
-    this.initialEntityPos = null;
-    this.dragOffset = null;
-  }
-
-  private panCamera(dx: number, dy: number) {
-    const cos = Math.cos(-this.camera.rotation);
-    const sin = Math.sin(-this.camera.rotation);
-    const rotatedDx = dx * cos - dy * sin;
-    const rotatedDy = dx * sin + dy * cos;
-
-    this.camera.x -= rotatedDx / this.camera.zoom;
-    this.camera.y -= rotatedDy / this.camera.zoom;
-  }
-
-  private selectEntity(entity: Entity | null) {
-    if (this.selectedEntity) this.selectedEntity.isSelected = false;
-    this.selectedEntity = entity;
-    if (this.selectedEntity) this.selectedEntity.isSelected = true;
-    
-    if (this.currentMode === 'edit') {
-        this.updateSelectionUI();
-    }
-  }
+  // --- Logic Helpers ---
 
   private deleteSelected() {
     if (this.selectedEntity) {
-      this.commandManager.execute(new RemoveEntityCommand(this, this.selectedEntity));
-      this.selectedEntity = null;
-      this.updateSelectionUI();
-    }
-  }
-
-  public addEntity(entity: Entity) {
-    this.entities.push(entity);
-  }
-
-  public removeEntity(entity: Entity) {
-    const index = this.entities.indexOf(entity);
-    if (index > -1) {
-      this.entities.splice(index, 1);
-    }
-    if (this.selectedEntity === entity) {
-      this.selectEntity(null);
+      if (this.selectedEntity instanceof BaseAction) {
+          // Action Deletion Logic
+          const action = this.selectedEntity;
+          const owner = action.owner; // owner is IActionOwner
+          
+          if (owner instanceof Player) {
+              this.commandManager.execute(new RemoveActionChainCommand(owner, action));
+              this.selectedEntity = null;
+              this.updateSelectionUI();
+          }
+      } else {
+          // Normal Entity Deletion
+          this.commandManager.execute(new RemoveEntityCommand(this, this.selectedEntity));
+          this.selectedEntity = null;
+          this.updateSelectionUI();
+      }
     }
   }
 
@@ -855,46 +940,8 @@ export class Game {
     this.field.draw(this.ctx);
     this.entities.forEach(entity => entity.draw(this.ctx));
     
-    // Draw Temp Shape
-    if (this.isDrawing && this.tempShape) {
-        this.tempShape.draw(this.ctx);
-    }
-
-    // Draw Resize/Rotate Handles if Selected
-    if (this.selectedEntity instanceof BaseShape && this.currentTool === 'select') {
-        const handles = this.selectedEntity.getHandles();
-        this.ctx.save();
-        this.ctx.translate(this.selectedEntity.x, this.selectedEntity.y);
-        this.ctx.rotate(this.selectedEntity.rotation);
-        
-        const inverseScale = 1 / this.camera.zoom;
-        const size = 8 * inverseScale;
-
-        this.ctx.lineWidth = 1 * inverseScale;
-
-        for (const h of handles) {
-            if (h.id === 'rotate') {
-                this.ctx.beginPath();
-                this.ctx.moveTo(h.x, h.y);
-                this.ctx.lineTo(h.x, h.y + 25); 
-                this.ctx.strokeStyle = '#ffffff';
-                this.ctx.stroke();
-
-                this.ctx.beginPath();
-                this.ctx.arc(h.x, h.y, size, 0, 2 * Math.PI); 
-                this.ctx.fillStyle = '#22c55e';
-                this.ctx.strokeStyle = '#ffffff';
-                this.ctx.fill();
-                this.ctx.stroke();
-            } else {
-                this.ctx.fillStyle = '#ffffff';
-                this.ctx.strokeStyle = '#000000';
-                this.ctx.fillRect(h.x - size/2, h.y - size/2, size, size);
-                this.ctx.strokeRect(h.x - size/2, h.y - size/2, size, size);
-            }
-        }
-        this.ctx.restore();
-    }
+    // Delegate Tool Rendering (Temp shapes, handles, guides)
+    this.tools.get(this.currentToolId)?.render(this.ctx);
 
     this.ctx.restore();
   }

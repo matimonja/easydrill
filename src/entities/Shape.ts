@@ -1,4 +1,4 @@
-import { Entity } from './Player';
+import { Entity } from '../core/Interfaces';
 import { DEFAULT_SHAPE_CONFIG } from '../config/defaults';
 
 export interface Handle {

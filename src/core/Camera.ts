@@ -39,6 +39,16 @@ export class Camera {
     this.y += (mouseWorldBefore.y - mouseWorldAfter.y);
   }
 
+  public pan(dx: number, dy: number) {
+    const cos = Math.cos(-this.rotation);
+    const sin = Math.sin(-this.rotation);
+    const rotatedDx = dx * cos - dy * sin;
+    const rotatedDy = dx * sin + dy * cos;
+    
+    this.x -= rotatedDx / this.zoom;
+    this.y -= rotatedDy / this.zoom;
+  }
+
   public toggleRotation() {
     if (this.rotation === 0) {
       this.rotation = -Math.PI / 2;

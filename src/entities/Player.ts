@@ -1,14 +1,7 @@
-export interface Entity {
-  id: string;
-  x: number;
-  y: number;
-  isSelected: boolean;
-  draw(ctx: CanvasRenderingContext2D): void;
-  containsPoint(x: number, y: number): boolean;
-  setPosition(x: number, y: number): void;
-}
+import { Entity, IActionOwner } from '../core/Interfaces';
+import { BaseAction } from './Action';
 
-export class Player implements Entity {
+export class Player implements Entity, IActionOwner {
   public id: string;
   public x: number;
   public y: number;
@@ -19,6 +12,8 @@ export class Player implements Entity {
   public team: string = 'A';
   public hasBall: boolean = false;
   public description: string = '';
+  
+  public actions: BaseAction[] = [];
 
   private radius: number = 15;
 
@@ -33,6 +28,21 @@ export class Player implements Entity {
   setPosition(x: number, y: number) {
     this.x = x;
     this.y = y;
+    
+    // Update chain instead of translating actions
+    this.updateActionChain();
+  }
+
+  updateActionChain() {
+      let currentX = this.x;
+      let currentY = this.y;
+      
+      for (const action of this.actions) {
+          action.setStartPosition(currentX, currentY);
+          const final = action.getFinalPosition();
+          currentX = final.x;
+          currentY = final.y;
+      }
   }
 
   containsPoint(px: number, py: number): boolean {
@@ -42,6 +52,9 @@ export class Player implements Entity {
   }
 
   draw(ctx: CanvasRenderingContext2D) {
+    // Draw Actions
+    this.actions.forEach(action => action.draw(ctx));
+
     if (this.isSelected) {
       ctx.beginPath();
       ctx.arc(this.x, this.y, this.radius + 4, 0, Math.PI * 2);
