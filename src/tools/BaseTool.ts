@@ -27,3 +27,4 @@ export abstract class BaseTool implements Tool {
         return this.game.camera.screenToWorld(mouseX, mouseY, this.game.canvas);
     }
 }
+

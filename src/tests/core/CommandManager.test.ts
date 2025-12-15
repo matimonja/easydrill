@@ -41,3 +41,4 @@ describe('CommandManager', () => {
         expect(cmd1.execute).toHaveBeenCalledTimes(1);
     });
 });
+

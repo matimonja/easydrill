@@ -102,16 +102,18 @@ body {
 
 /* Section 2: Tools */
 .section-tools {
-  flex: 0 0 300px;
+  flex: 0 0 auto;
   justify-content: flex-start;
+  min-width: 150px;
 }
 
 .tools-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
   grid-template-rows: repeat(2, 1fr);
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(40px, 1fr);
   gap: 8px;
-  width: 100%;
+  width: auto;
 }
 
 .tools-grid.hidden {
@@ -391,3 +393,4 @@ body {
   opacity: 0;
   pointer-events: none;
 }
+

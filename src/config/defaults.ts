@@ -7,3 +7,4 @@ export const DEFAULT_SHAPE_CONFIG = {
     endMarker: 'none' as 'none' | 'arrow',
     smoothingFactor: 5
 };
+

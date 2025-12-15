@@ -34,3 +34,4 @@ describe('TriangleShape', () => {
         expect(handles.find(h => h.id === 'rotate')).toBeDefined();
     });
 });
+

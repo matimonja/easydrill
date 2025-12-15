@@ -30,3 +30,4 @@ export class PlayerTool extends BaseTool {
     onMouseMove(e: MouseEvent): void {}
     onMouseUp(e: MouseEvent): void {}
 }
+

@@ -3,6 +3,7 @@ import { Field } from '../entities/Field';
 import { Player } from '../entities/Player';
 import { BaseShape, RectangleShape, EllipseShape, TriangleShape, LineShape, FreehandShape } from '../entities/Shape';
 import { BaseAction, ActionType, RunAction, PassAction, DribbleAction, ShootAction, TackleAction, TurnAction } from '../entities/Action';
+import { Cone, Ball, ConeGroup } from '../entities/ExerciseObjects';
 import { CommandManager } from './CommandManager';
 import { RemoveEntityCommand, AddEntityCommand, MoveEntityCommand, RemoveActionChainCommand } from './Commands';
 import { IGameContext, ToolType, ShapeType, Entity } from './Interfaces';
@@ -14,6 +15,7 @@ import { PlayerTool } from '../tools/PlayerTool';
 import { CameraTool } from '../tools/CameraTool';
 import { ShapeTool } from '../tools/ShapeTool';
 import { ActionTool } from '../tools/ActionTool';
+import { ExerciseTool } from '../tools/ExerciseTool';
 
 type AppMode = 'edit' | 'play';
 
@@ -56,6 +58,7 @@ export class Game implements IGameContext {
     this.tools.set('camera', new CameraTool(this));
     this.tools.set('shape', new ShapeTool(this));
     this.tools.set('action', new ActionTool(this));
+    this.tools.set('exercise', new ExerciseTool(this));
 
     // Initial Setup
     this.setupUI();
@@ -117,15 +120,26 @@ export class Game implements IGameContext {
     if (toolId === 'player') activeBtnId = 'tool-player';
     if (toolId === 'camera') activeBtnId = 'tool-camera';
     if (toolId === 'shape') activeBtnId = 'tool-shape';
+    if (toolId === 'exercise') activeBtnId = 'tool-exercise';
     
     if (activeBtnId) document.getElementById(activeBtnId)?.classList.add('active');
 
     // Deselect entities if switching to creation tools to avoid confusion
-    if (toolId === 'camera' || toolId === 'shape') {
+    if (toolId === 'camera' || toolId === 'shape' || toolId === 'exercise') {
         this.selectEntity(null);
     }
 
     this.updatePropertiesPanel(toolId);
+  }
+
+  private activateActionTool(player: Player) {
+      this.setTool('action');
+      const tool = this.tools.get('action') as ActionTool;
+      if (tool) {
+          tool.setContext(player, this.currentActionType, this.currentActionLineType);
+      }
+      // Force UI update to show active highlights
+      this.updatePropertiesPanel('action');
   }
 
   // --- Input Handling (Delegated to Tools) ---
@@ -169,6 +183,7 @@ export class Game implements IGameContext {
       if (e.key.toLowerCase() === 'p') this.setTool('player');
       if (e.key.toLowerCase() === 'c') this.setTool('camera');
       if (e.key.toLowerCase() === 's') this.setTool('shape');
+      if (e.key.toLowerCase() === 'o') this.setTool('exercise');
       if (e.key.toLowerCase() === 'r') this.camera.toggleRotation();
     });
   }
@@ -216,6 +231,7 @@ export class Game implements IGameContext {
     document.getElementById('tool-player')?.addEventListener('click', () => this.setTool('player'));
     document.getElementById('tool-camera')?.addEventListener('click', () => this.setTool('camera'));
     document.getElementById('tool-shape')?.addEventListener('click', () => this.setTool('shape'));
+    document.getElementById('tool-exercise')?.addEventListener('click', () => this.setTool('exercise'));
     
     document.getElementById('action-undo')?.addEventListener('click', () => this.commandManager.undo());
     document.getElementById('action-redo')?.addEventListener('click', () => this.commandManager.redo());
@@ -253,6 +269,49 @@ export class Game implements IGameContext {
              propertiesPanel.innerHTML = '<span class="placeholder-text-small">Modo Reproducción</span>';
          }
          return;
+      }
+
+      if (tool === 'exercise') {
+          const exTool = this.tools.get('exercise') as ExerciseTool;
+          const currentObj = exTool.getObjectType();
+          const currentShape = exTool.getConeShape();
+
+          let html = `
+             <div class="prop-info"><span class="prop-label">Objetos</span></div>
+             <div style="display: flex; gap: 5px; margin-bottom: 5px;">
+                 <button class="prop-btn ${currentObj==='cone'?'active-prop':''}" id="ex-cone" title="Cono"><i class="fa-solid fa-traffic-cone"></i></button>
+                 <button class="prop-btn ${currentObj==='ball'?'active-prop':''}" id="ex-ball" title="Bocha"><i class="fa-solid fa-circle"></i></button>
+             </div>
+          `;
+
+          if (currentObj === 'cone') {
+             html += `
+                <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                     <button class="prop-btn ${currentShape==='single'?'active-prop':''}" id="ex-shape-single" title="Simple"><i class="fa-solid fa-stop"></i></button>
+                     <button class="prop-btn ${currentShape==='line'?'active-prop':''}" id="ex-shape-line" title="Línea"><i class="fa-solid fa-slash"></i></button>
+                     <button class="prop-btn ${currentShape==='freehand'?'active-prop':''}" id="ex-shape-free" title="Libre"><i class="fa-solid fa-pencil"></i></button>
+                     <button class="prop-btn ${currentShape==='rectangle'?'active-prop':''}" id="ex-shape-rect" title="Rectángulo"><i class="fa-regular fa-square"></i></button>
+                     <button class="prop-btn ${currentShape==='ellipse'?'active-prop':''}" id="ex-shape-circle" title="Círculo"><i class="fa-regular fa-circle"></i></button>
+                     <button class="prop-btn ${currentShape==='triangle'?'active-prop':''}" id="ex-shape-tri" title="Triángulo"><i class="fa-solid fa-play fa-rotate-270"></i></button>
+                </div>
+             `;
+          }
+
+          propertiesPanel.innerHTML = html;
+
+          document.getElementById('ex-cone')?.addEventListener('click', () => { exTool.setObjectType('cone'); this.updatePropertiesPanel('exercise'); });
+          document.getElementById('ex-ball')?.addEventListener('click', () => { exTool.setObjectType('ball'); this.updatePropertiesPanel('exercise'); });
+          
+          if (currentObj === 'cone') {
+             const setShape = (s: any) => { exTool.setConeShape(s); this.updatePropertiesPanel('exercise'); };
+             document.getElementById('ex-shape-single')?.addEventListener('click', () => setShape('single'));
+             document.getElementById('ex-shape-line')?.addEventListener('click', () => setShape('line'));
+             document.getElementById('ex-shape-free')?.addEventListener('click', () => setShape('freehand'));
+             document.getElementById('ex-shape-rect')?.addEventListener('click', () => setShape('rectangle'));
+             document.getElementById('ex-shape-circle')?.addEventListener('click', () => setShape('ellipse'));
+             document.getElementById('ex-shape-tri')?.addEventListener('click', () => setShape('triangle'));
+          }
+          return;
       }
 
       if (tool === 'action') {
@@ -368,6 +427,16 @@ export class Game implements IGameContext {
                      <button class="prop-btn danger" id="prop-delete" title="Eliminar"><i class="fa-solid fa-trash"></i> Eliminar</button>
                   `;
                   document.getElementById('prop-delete')?.addEventListener('click', () => this.deleteSelected());
+              } else if (p instanceof Cone || p instanceof Ball || p instanceof ConeGroup) {
+                  propertiesPanel.innerHTML = `
+                     <div class="prop-info">
+                        <span class="prop-label">Selección</span>
+                        <span class="prop-value">Objeto</span>
+                     </div>
+                     <div class="separator-vertical" style="height: 20px; margin: 0 10px;"></div>
+                     <button class="prop-btn danger" id="prop-delete" title="Eliminar"><i class="fa-solid fa-trash"></i> Eliminar</button>
+                  `;
+                  document.getElementById('prop-delete')?.addEventListener('click', () => this.deleteSelected());
               }
           } else {
               propertiesPanel.innerHTML = '<span class="placeholder-text-small">Seleccione un elemento para ver sus propiedades</span>';
@@ -452,12 +521,6 @@ export class Game implements IGameContext {
 
       document.getElementById('prop-delete')?.addEventListener('click', () => this.deleteSelected());
   }
-
-  private activateActionTool(player: Player) {
-      const actionTool = this.tools.get('action') as ActionTool;
-      actionTool.setContext(player, this.currentActionType, this.currentActionLineType);
-      this.setTool('action');
-  }
   
   public updateSelectionUI() {
       // Re-render properties panel for current tool (updates context sensitive buttons)
@@ -498,7 +561,67 @@ export class Game implements IGameContext {
       });
       colorPaletteHtml += '</div>';
 
-      if (p instanceof BaseShape) {
+      if (p instanceof Cone) {
+           html += `
+              <div class="menu-control-group">
+                  <label class="menu-label">Color</label>
+                  ${colorPaletteHtml}
+                  <input type="color" id="cone-prop-color" class="menu-input" value="${p.color}">
+              </div>
+              <div class="menu-control-group">
+                  <label class="menu-label">Altura: <span id="height-val">${p.height}</span>px</label>
+                  <input type="range" id="cone-prop-height" class="menu-input" min="10" max="60" value="${p.height}">
+              </div>
+           `;
+      } else if (p instanceof Ball) {
+           html += `
+              <div class="menu-control-group checkbox-wrapper">
+                  <input type="checkbox" id="ball-prop-group" ${p.isGroup ? 'checked' : ''}>
+                  <label class="menu-label" for="ball-prop-group">Grupo de Bochas</label>
+              </div>
+              <div class="menu-control-group">
+                  <label class="menu-label">Color</label>
+                  ${colorPaletteHtml}
+                  <input type="color" id="ball-prop-color" class="menu-input" value="${p.color}">
+              </div>
+           `;
+      } else if (p instanceof ConeGroup) {
+           html += `
+               <div class="menu-control-group checkbox-wrapper">
+                  <input type="checkbox" id="group-prop-lines" ${p.showLines ? 'checked' : ''}>
+                  <label class="menu-label" for="group-prop-lines">Mostrar Líneas</label>
+               </div>
+           `;
+           
+           if (p.shapeType === 'freehand') {
+               html += `
+                  <div class="menu-control-group">
+                      <label class="menu-label">Suavizado: <span id="group-smooth-val">${p.smoothingFactor}</span></label>
+                      <input type="range" id="group-prop-smooth" class="menu-input" min="1" max="20" step="1" value="${p.smoothingFactor}">
+                  </div>
+               `;
+           }
+
+           html += `
+               <div class="menu-control-group">
+                  <label class="menu-label">Distancia: <span id="dist-val">${p.coneDistance}</span>px</label>
+                  <input type="range" id="group-prop-dist" class="menu-input" min="20" max="200" step="5" value="${p.coneDistance}">
+               </div>
+               <div class="menu-control-group">
+                  <label class="menu-label">Color del Conjunto</label>
+                  ${colorPaletteHtml}
+                  <input type="color" id="group-prop-color" class="menu-input" value="${p.groupColor}">
+              </div>
+              <div class="menu-control-group">
+                  <label class="menu-label">Altura Conos: <span id="height-val">${p.groupHeight}</span>px</label>
+                  <input type="range" id="group-prop-height" class="menu-input" min="10" max="60" value="${p.groupHeight}">
+              </div>
+              <div class="menu-control-group">
+                  <label class="menu-label">Color Cono Seleccionado (#${p.selectedConeIndex})</label>
+                  <input type="color" id="group-prop-ind-color" class="menu-input" value="${p.coneColors.get(p.selectedConeIndex) || p.groupColor}">
+              </div>
+           `;
+      } else if (p instanceof BaseShape) {
           const shape = p;
           const isLine = shape instanceof LineShape;
           const isFreehand = shape instanceof FreehandShape;
@@ -708,16 +831,20 @@ export class Game implements IGameContext {
 
       // --- LISTENERS ---
 
-      // ... existing listeners ...
-
       document.querySelectorAll('.color-swatch').forEach(swatch => {
           swatch.addEventListener('click', (e) => {
               const color = (e.target as HTMLElement).dataset.color;
               if (color) {
                   if (this.selectedEntity instanceof BaseShape) this.selectedEntity.color = color;
                   if (this.selectedEntity instanceof Player) this.selectedEntity.color = color;
+                  if (this.selectedEntity instanceof Cone) this.selectedEntity.color = color;
+                  if (this.selectedEntity instanceof Ball) this.selectedEntity.color = color;
+                  if (this.selectedEntity instanceof ConeGroup) this.selectedEntity.groupColor = color;
                   
-                  const input = document.getElementById('shape-color') as HTMLInputElement;
+                  const input = document.getElementById('shape-color') as HTMLInputElement || 
+                                document.getElementById('cone-prop-color') || 
+                                document.getElementById('ball-prop-color') ||
+                                document.getElementById('group-prop-color');
                   if (input) input.value = color;
               }
           });
@@ -729,7 +856,53 @@ export class Game implements IGameContext {
           if (this.selectedEntity instanceof Player) this.selectedEntity.color = val;
       });
 
-      if (p instanceof BaseShape) {
+      if (p instanceof Cone) {
+          document.getElementById('cone-prop-color')?.addEventListener('input', (e) => {
+              p.color = (e.target as HTMLInputElement).value;
+          });
+          document.getElementById('cone-prop-height')?.addEventListener('input', (e) => {
+              p.height = parseInt((e.target as HTMLInputElement).value, 10);
+              const valSpan = document.getElementById('height-val');
+              if (valSpan) valSpan.textContent = p.height.toString();
+          });
+      } else if (p instanceof Ball) {
+          document.getElementById('ball-prop-group')?.addEventListener('change', (e) => {
+              p.isGroup = (e.target as HTMLInputElement).checked;
+          });
+          document.getElementById('ball-prop-color')?.addEventListener('input', (e) => {
+              p.color = (e.target as HTMLInputElement).value;
+          });
+      } else if (p instanceof ConeGroup) {
+          document.getElementById('group-prop-lines')?.addEventListener('change', (e) => {
+              p.showLines = (e.target as HTMLInputElement).checked;
+          });
+
+          if (p.shapeType === 'freehand') {
+              document.getElementById('group-prop-smooth')?.addEventListener('input', (e) => {
+                  p.smoothingFactor = parseInt((e.target as HTMLInputElement).value, 10);
+                  const valSpan = document.getElementById('group-smooth-val');
+                  if (valSpan) valSpan.textContent = p.smoothingFactor.toString();
+              });
+          }
+
+          document.getElementById('group-prop-dist')?.addEventListener('input', (e) => {
+              p.coneDistance = parseInt((e.target as HTMLInputElement).value, 10);
+              const valSpan = document.getElementById('dist-val');
+              if (valSpan) valSpan.textContent = p.coneDistance.toString();
+          });
+          document.getElementById('group-prop-color')?.addEventListener('input', (e) => {
+              p.groupColor = (e.target as HTMLInputElement).value;
+          });
+          document.getElementById('group-prop-height')?.addEventListener('input', (e) => {
+              p.groupHeight = parseInt((e.target as HTMLInputElement).value, 10);
+              const valSpan = document.getElementById('height-val');
+              if (valSpan) valSpan.textContent = p.groupHeight.toString();
+          });
+          document.getElementById('group-prop-ind-color')?.addEventListener('input', (e) => {
+              const val = (e.target as HTMLInputElement).value;
+              p.coneColors.set(p.selectedConeIndex, val);
+          });
+      } else if (p instanceof BaseShape) {
           const shape = p;
           const isLine = shape instanceof LineShape;
           const isFreehand = shape instanceof FreehandShape;

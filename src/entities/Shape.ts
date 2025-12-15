@@ -411,3 +411,4 @@ export class FreehandShape extends BaseShape {
   getHandles(): Handle[] { return []; }
   resize(id: string, lx: number, ly: number): void {}
 }
+

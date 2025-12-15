@@ -63,3 +63,4 @@ describe('ShapeTool', () => {
         expect(mockGame.commandManager.execute).not.toHaveBeenCalled();
     });
 });
+

@@ -38,3 +38,4 @@ export interface Tool {
      */
     deactivate(): void;
 }
+

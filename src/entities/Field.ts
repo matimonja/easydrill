@@ -140,3 +140,4 @@ export class Field {
       ctx.strokeRect(left, top, goalDepth, goalWidth);
   }
 }
+

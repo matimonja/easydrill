@@ -20,3 +20,4 @@ if (typeof HTMLCanvasElement !== 'undefined') {
         fillText: vi.fn(),
     })) as any;
 }
+

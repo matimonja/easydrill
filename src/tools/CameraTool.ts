@@ -49,3 +49,4 @@ export class CameraTool extends BaseTool {
         this.isPanning = false;
     }
 }
+

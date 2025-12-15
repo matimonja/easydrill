@@ -87,3 +87,4 @@ describe('Actions', () => {
         expect(action2.endY).toBe(25);
     });
 });
+

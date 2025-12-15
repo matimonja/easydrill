@@ -17,7 +17,7 @@ export interface IActionOwner {
     y: number;
 }
 
-export type ToolType = 'select' | 'player' | 'camera' | 'shape' | 'action';
+export type ToolType = 'select' | 'player' | 'camera' | 'shape' | 'action' | 'exercise';
 export type ShapeType = 'rectangle' | 'circle' | 'triangle' | 'line' | 'freehand';
 
 /**
@@ -40,3 +40,4 @@ export interface IGameContext {
     // UI Helpers that might be triggered by tools
     updateSelectionUI(): void;
 }
+
