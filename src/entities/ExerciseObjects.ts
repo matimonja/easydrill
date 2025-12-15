@@ -1,7 +1,7 @@
 import { Entity } from '../core/Interfaces';
 import { Handle, BaseShape } from './Shape';
 
-export type ExerciseObjectType = 'cone' | 'ball';
+export type ExerciseObjectType = 'cone' | 'ball' | 'goal';
 export type ConeGroupShape = 'line' | 'freehand' | 'rectangle' | 'ellipse' | 'triangle';
 
 export class Cone implements Entity {

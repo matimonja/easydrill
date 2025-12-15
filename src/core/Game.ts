@@ -4,6 +4,7 @@ import { Player } from '../entities/Player';
 import { BaseShape, RectangleShape, EllipseShape, TriangleShape, LineShape, FreehandShape } from '../entities/Shape';
 import { BaseAction, ActionType, RunAction, PassAction, DribbleAction, ShootAction, TackleAction, TurnAction } from '../entities/Action';
 import { Cone, Ball, ConeGroup } from '../entities/ExerciseObjects';
+import { Goal } from '../entities/Goal';
 import { CommandManager } from './CommandManager';
 import { RemoveEntityCommand, AddEntityCommand, MoveEntityCommand, RemoveActionChainCommand } from './Commands';
 import { IGameContext, ToolType, ShapeType, Entity } from './Interfaces';
@@ -281,6 +282,7 @@ export class Game implements IGameContext {
              <div style="display: flex; gap: 5px; margin-bottom: 5px;">
                  <button class="prop-btn ${currentObj==='cone'?'active-prop':''}" id="ex-cone" title="Cono"><i class="fa-solid fa-traffic-cone"></i></button>
                  <button class="prop-btn ${currentObj==='ball'?'active-prop':''}" id="ex-ball" title="Bocha"><i class="fa-solid fa-circle"></i></button>
+                 <button class="prop-btn ${currentObj==='goal'?'active-prop':''}" id="ex-goal" title="Arco"><i class="fa-regular fa-futbol"></i></button>
              </div>
           `;
 
@@ -301,6 +303,7 @@ export class Game implements IGameContext {
 
           document.getElementById('ex-cone')?.addEventListener('click', () => { exTool.setObjectType('cone'); this.updatePropertiesPanel('exercise'); });
           document.getElementById('ex-ball')?.addEventListener('click', () => { exTool.setObjectType('ball'); this.updatePropertiesPanel('exercise'); });
+          document.getElementById('ex-goal')?.addEventListener('click', () => { exTool.setObjectType('goal'); this.updatePropertiesPanel('exercise'); });
           
           if (currentObj === 'cone') {
              const setShape = (s: any) => { exTool.setConeShape(s); this.updatePropertiesPanel('exercise'); };
@@ -585,6 +588,17 @@ export class Game implements IGameContext {
                   <input type="color" id="ball-prop-color" class="menu-input" value="${p.color}">
               </div>
            `;
+      } else if (p instanceof Goal) {
+           html += `
+              <div class="menu-control-group">
+                  <label class="menu-label">Color del Arco</label>
+                  ${colorPaletteHtml}
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                     <span style="font-size: 0.8rem; color: #888;">Personalizado:</span>
+                     <input type="color" id="goal-prop-color" class="menu-input" value="${p.color}" style="flex: 1; height: 30px;">
+                  </div>
+              </div>
+           `;
       } else if (p instanceof ConeGroup) {
            html += `
                <div class="menu-control-group checkbox-wrapper">
@@ -840,11 +854,13 @@ export class Game implements IGameContext {
                   if (this.selectedEntity instanceof Cone) this.selectedEntity.color = color;
                   if (this.selectedEntity instanceof Ball) this.selectedEntity.color = color;
                   if (this.selectedEntity instanceof ConeGroup) this.selectedEntity.groupColor = color;
+                  if (this.selectedEntity instanceof Goal) this.selectedEntity.color = color;
                   
                   const input = document.getElementById('shape-color') as HTMLInputElement || 
                                 document.getElementById('cone-prop-color') || 
                                 document.getElementById('ball-prop-color') ||
-                                document.getElementById('group-prop-color');
+                                document.getElementById('group-prop-color') ||
+                                document.getElementById('goal-prop-color');
                   if (input) input.value = color;
               }
           });
@@ -870,6 +886,10 @@ export class Game implements IGameContext {
               p.isGroup = (e.target as HTMLInputElement).checked;
           });
           document.getElementById('ball-prop-color')?.addEventListener('input', (e) => {
+              p.color = (e.target as HTMLInputElement).value;
+          });
+      } else if (p instanceof Goal) {
+          document.getElementById('goal-prop-color')?.addEventListener('input', (e) => {
               p.color = (e.target as HTMLInputElement).value;
           });
       } else if (p instanceof ConeGroup) {
