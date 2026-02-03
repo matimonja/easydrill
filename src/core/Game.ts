@@ -6,6 +6,7 @@ import { BaseAction, ActionType, RunAction, PassAction, DribbleAction, ShootActi
 import { Cone, Ball, ConeGroup } from '../entities/ExerciseObjects';
 import { Goal } from '../entities/Goal';
 import { CommandManager } from './CommandManager';
+import { AnimationManager } from './AnimationManager';
 import { RemoveEntityCommand, AddEntityCommand, MoveEntityCommand, RemoveActionChainCommand } from './Commands';
 import { IGameContext, ToolType, ShapeType, Entity } from './Interfaces';
 
@@ -26,9 +27,14 @@ export class Game implements IGameContext {
   public camera: Camera;
   public field: Field;
   public commandManager: CommandManager;
+  public animationManager: AnimationManager;
   
   public entities: Entity[] = [];
   private selectedEntity: Entity | null = null;
+  
+  // Scene Management
+  public currentScene: number = 0;
+  public sceneCount: number = 1;
   
   // State Management
   private currentMode: AppMode = 'edit';
@@ -52,6 +58,7 @@ export class Game implements IGameContext {
     this.camera = new Camera(0, 0);
     this.field = new Field();
     this.commandManager = new CommandManager();
+    this.animationManager = new AnimationManager();
 
     // Initialize Tools
     this.tools.set('select', new SelectTool(this));
@@ -201,10 +208,18 @@ export class Game implements IGameContext {
       this.currentMode = mode;
       
       if (mode === 'edit') {
+        // Stop animation and reset positions when entering Edit Mode
+        this.animationManager.stop();
+        this.updateSceneState();
+
         btnModeEdit?.classList.add('active');
         btnModePlay?.classList.remove('active');
         editToolsPanel?.classList.remove('hidden');
         playToolsPanel?.classList.add('hidden');
+        
+        // Show Scene Controls in Edit Mode
+        const sceneSection = document.getElementById('section-scenes');
+        if (sceneSection) sceneSection.style.display = 'flex';
         
         // Restore Edit Tool
         this.setTool('select');
@@ -214,6 +229,10 @@ export class Game implements IGameContext {
         btnModePlay?.classList.add('active');
         editToolsPanel?.classList.add('hidden');
         playToolsPanel?.classList.remove('hidden');
+        
+        // Hide Scene Controls in Play Mode
+        const sceneSection = document.getElementById('section-scenes');
+        if (sceneSection) sceneSection.style.display = 'none';
         
         this.selectEntity(null); 
         this.updatePropertiesPanel(null);
@@ -226,6 +245,39 @@ export class Game implements IGameContext {
 
     btnModeEdit?.addEventListener('click', () => switchMode('edit'));
     btnModePlay?.addEventListener('click', () => switchMode('play'));
+
+    // Inject Scene Controls
+    const modesSection = document.querySelector('.section-modes');
+    if (modesSection) {
+        const sep = document.createElement('div');
+        sep.className = 'separator-vertical';
+        modesSection.after(sep);
+        
+        const sceneSection = document.createElement('div');
+        sceneSection.id = 'section-scenes';
+        sceneSection.className = 'toolbar-section section-modes'; // Reuse style
+        sceneSection.style.flexDirection = 'column';
+        sceneSection.style.gap = '5px';
+        sceneSection.style.minWidth = '100px';
+        sceneSection.innerHTML = `
+            <div style="font-size: 0.7rem; color: #888; text-transform: uppercase;">Escena</div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <button class="mode-btn" id="scene-prev" style="width: 24px; height: 24px; font-size: 12px;"><i class="fa-solid fa-chevron-left"></i></button>
+                <span id="scene-display" style="font-weight: bold; min-width: 20px; text-align: center; font-size: 1.1rem;">1</span>
+                <button class="mode-btn" id="scene-next" style="width: 24px; height: 24px; font-size: 12px;"><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+            <button class="prop-btn" id="scene-add" style="padding: 2px 8px; font-size: 0.75rem; width: 100%; justify-content: center; height: 24px;"><i class="fa-solid fa-plus"></i> Nueva</button>
+        `;
+        sep.after(sceneSection);
+
+        // Scene Listeners
+        document.getElementById('scene-prev')?.addEventListener('click', () => this.setScene(this.currentScene - 1));
+        document.getElementById('scene-next')?.addEventListener('click', () => this.setScene(this.currentScene + 1));
+        document.getElementById('scene-add')?.addEventListener('click', () => {
+            this.sceneCount++;
+            this.setScene(this.sceneCount - 1);
+        });
+    }
 
     // Tool Buttons
     document.getElementById('tool-select')?.addEventListener('click', () => this.setTool('select'));
@@ -258,6 +310,62 @@ export class Game implements IGameContext {
 
     btnCollapse?.addEventListener('click', () => toggleMenu());
     btnOpenMenu?.addEventListener('click', () => toggleMenu());
+
+    // Animation Controls
+    const btnAnimPlay = document.getElementById('anim-play');
+    const btnAnimStop = document.getElementById('anim-stop');
+    const inputAnimSpeed = document.getElementById('anim-speed') as HTMLInputElement;
+    const spanAnimSpeed = document.getElementById('anim-speed-val');
+
+    btnAnimPlay?.addEventListener('click', () => {
+        if (this.animationManager.isPlaying) {
+            this.animationManager.pause();
+        } else {
+            this.animationManager.play(this.currentScene, this.entities);
+        }
+        // Update Icon
+        const icon = btnAnimPlay.querySelector('i');
+        if (this.animationManager.isPlaying && !this.animationManager.isPaused) {
+            icon?.classList.replace('fa-play', 'fa-pause');
+        } else {
+            icon?.classList.replace('fa-pause', 'fa-play');
+        }
+    });
+
+    btnAnimStop?.addEventListener('click', () => {
+        this.animationManager.stop();
+        const icon = btnAnimPlay?.querySelector('i');
+        icon?.classList.replace('fa-pause', 'fa-play');
+    });
+
+    inputAnimSpeed?.addEventListener('input', (e) => {
+        const val = parseFloat((e.target as HTMLInputElement).value);
+        this.animationManager.setSpeed(val);
+        if (spanAnimSpeed) spanAnimSpeed.textContent = val.toFixed(1) + 'x';
+    });
+  }
+
+  public setScene(index: number) {
+      if (index < 0 || index >= this.sceneCount) return;
+      
+      this.currentScene = index;
+      this.updateSceneState();
+  }
+
+  public updateSceneState() {
+      // Update UI
+      const display = document.getElementById('scene-display');
+      if (display) display.textContent = (this.currentScene + 1).toString();
+      
+      // Update Entities
+      this.entities.forEach(e => {
+          if (e instanceof Player) {
+              e.updateForScene(this.currentScene);
+          }
+      });
+      
+      // Deselect to avoid stale handles
+      this.selectEntity(null);
   }
 
   private updatePropertiesPanel(tool: ToolType | null) {
@@ -265,10 +373,12 @@ export class Game implements IGameContext {
       if (!propertiesPanel) return;
       propertiesPanel.innerHTML = ''; 
 
+      if (this.currentMode === 'play') {
+         propertiesPanel.innerHTML = '<span class="placeholder-text-small">Modo Reproducción</span>';
+         return;
+      }
+
       if (!tool) {
-         if (this.currentMode === 'play') {
-             propertiesPanel.innerHTML = '<span class="placeholder-text-small">Modo Reproducción</span>';
-         }
          return;
       }
 
@@ -1196,16 +1306,35 @@ export class Game implements IGameContext {
   }
 
   public start() {
-    this.loop();
+    requestAnimationFrame((t) => {
+        this.lastTime = t;
+        this.loop(t);
+    });
   }
 
-  private loop() {
-    this.update();
+  private lastTime: number = 0;
+
+  private loop(timestamp: number) {
+    const dt = (timestamp - this.lastTime) / 1000;
+    this.lastTime = timestamp;
+
+    this.update(dt);
     this.render();
-    requestAnimationFrame(() => this.loop());
+    requestAnimationFrame((t) => this.loop(t));
   }
 
-  private update() {}
+  private update(dt: number) {
+      if (this.currentMode === 'play') {
+          this.animationManager.update(dt);
+          
+          // Auto-update play button icon if paused automatically
+          if (this.animationManager.isPaused) {
+              const btnAnimPlay = document.getElementById('anim-play');
+              const icon = btnAnimPlay?.querySelector('i');
+              icon?.classList.replace('fa-pause', 'fa-play');
+          }
+      }
+  }
 
   private render() {
     this.ctx.fillStyle = '#111'; 
@@ -1215,7 +1344,11 @@ export class Game implements IGameContext {
     this.camera.applyTransform(this.ctx, this.canvas);
 
     this.field.draw(this.ctx);
-    this.entities.forEach(entity => entity.draw(this.ctx));
+    this.entities.forEach(entity => entity.draw(this.ctx, this.currentScene));
+    
+    if (this.currentMode === 'play') {
+        this.animationManager.render(this.ctx);
+    }
     
     // Delegate Tool Rendering (Temp shapes, handles, guides)
     this.tools.get(this.currentToolId)?.render(this.ctx);

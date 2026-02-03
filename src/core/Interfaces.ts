@@ -6,7 +6,7 @@ export interface Entity {
   x: number;
   y: number;
   isSelected: boolean;
-  draw(ctx: CanvasRenderingContext2D): void;
+  draw(ctx: CanvasRenderingContext2D, sceneIndex?: number): void;
   containsPoint(x: number, y: number): boolean;
   setPosition(x: number, y: number): void;
 }
@@ -30,6 +30,8 @@ export interface IGameContext {
     camera: Camera;
     commandManager: CommandManager;
     entities: Entity[];
+    
+    currentScene: number; // Added property
     
     addEntity(entity: Entity): void;
     removeEntity(entity: Entity): void;

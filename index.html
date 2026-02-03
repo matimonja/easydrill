@@ -80,8 +80,15 @@
             </div>
 
             <!-- Herramientas de Reproducción -->
-            <div id="play-tools-panel" class="tools-grid hidden">
-                <div class="placeholder-msg">Controles de Animación</div>
+            <div id="play-tools-panel" class="tools-grid play-tools-panel hidden">
+                <button class="tool-btn" id="anim-play" title="Reproducir/Pausar"><i class="fa-solid fa-play"></i></button>
+                <button class="tool-btn" id="anim-stop" title="Detener/Reiniciar"><i class="fa-solid fa-stop"></i></button>
+                
+                <div style="display: flex; align-items: center; gap: 5px; margin-left: 10px;">
+                    <i class="fa-solid fa-gauge-high" style="color: #888; font-size: 0.8rem;"></i>
+                    <input type="range" id="anim-speed" class="menu-input" min="0.5" max="3.0" step="0.1" value="1.0" style="width: 100px;">
+                    <span id="anim-speed-val" style="font-size: 0.8rem; color: #fff; min-width: 30px;">1.0x</span>
+                </div>
             </div>
 
         </div>

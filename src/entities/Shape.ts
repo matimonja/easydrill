@@ -38,7 +38,7 @@ export abstract class BaseShape implements Entity {
   abstract getHandles(): Handle[];
   abstract resize(handleId: string, localX: number, localY: number): void;
 
-  draw(ctx: CanvasRenderingContext2D): void {
+  draw(ctx: CanvasRenderingContext2D, sceneIndex?: number): void {
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(this.rotation);

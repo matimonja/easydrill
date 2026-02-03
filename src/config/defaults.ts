@@ -1,3 +1,6 @@
+/** Color por defecto de la bocha cuando un jugador empieza con "posee bocha". */
+export const DEFAULT_BALL_COLOR = '#ffffff';
+
 export const DEFAULT_SHAPE_CONFIG = {
     color: '#ffffff',
     strokeType: 'solid' as 'solid' | 'dashed' | 'dotted',

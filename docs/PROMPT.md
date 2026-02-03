@@ -19,7 +19,8 @@ Estás trabajando en "Tactical Board", una aplicación web de pizarra táctica d
 -   **Datos:** Las entidades (`Player`, `BaseShape`) contienen su lógica de dibujo y hit-testing.
 
 **Tu Tarea:**
-En algun momento se rompio la funcionalidad de dibujar las acciones del jugador. En este momento no puedo dibujar ninguna
+Quiero que la conduccion tenga en cuenta la direccion en la que se mueve el jugador para ir cambiando de posicion la bocha. el caso mas dificil quizas es en conduccion libre donde se tiene que cambiar la posicion de a cuerdo a la direccion que va llevando el jugador. Quiero que contemples tmb que dos acciones de conduccion pueden ir juntas, primero una recta luego una libre o cualquier combinacion.
+Asumi que la posicion actual de la bocha es para un jugador que va corriendo horizontalmente hacia la derecha.
 
 **Requisitos para tu Respuesta:**
 1.  **Análisis Arquitectónico:** Antes de escribir código, explica brevemente qué archivos modificarás y por qué, asegurando que cumples con `AI_GUIDELINES.md`.

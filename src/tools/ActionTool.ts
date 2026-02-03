@@ -40,6 +40,7 @@ export class ActionTool extends BaseTool {
             } else {
                 action = new TackleAction(startX, startY, startX, startY);
             }
+            action.sceneIndex = this.game.currentScene;
             // Set owner happens in command
             
             this.game.commandManager.execute(new AddActionCommand(this.currentPlayer, action));
@@ -64,6 +65,7 @@ export class ActionTool extends BaseTool {
 
         this.tempAction.pathType = this.lineType;
         this.tempAction.owner = this.currentPlayer; // Set owner for temp action too
+        this.tempAction.sceneIndex = this.game.currentScene;
 
         if (this.lineType === 'freehand') {
             this.tempAction.points = [{x: startX, y: startY}];

@@ -29,7 +29,7 @@ export class Cone implements Entity {
         return (dx*dx + dy*dy) < r*r;
     }
 
-    draw(ctx: CanvasRenderingContext2D) {
+    draw(ctx: CanvasRenderingContext2D, sceneIndex?: number) {
         Cone.drawCone(ctx, this.x, this.y, this.color, this.height, this.isSelected);
     }
 
@@ -68,6 +68,7 @@ export class Ball implements Entity {
     public id: string;
     public isSelected: boolean = false;
     public isGroup: boolean = false;
+    public visible: boolean = true; // Control de visibilidad para animación
     
     constructor(
         public x: number, 
@@ -89,7 +90,9 @@ export class Ball implements Entity {
         return (dx*dx + dy*dy) < (r + 5)*(r + 5); 
     }
 
-    draw(ctx: CanvasRenderingContext2D) {
+    draw(ctx: CanvasRenderingContext2D, sceneIndex?: number) {
+        if (!this.visible) return; // Si está oculta (ej: tomada por animación), no dibujar
+
         const r = 5;
         
         const drawSingle = (cx: number, cy: number) => {

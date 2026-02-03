@@ -20,12 +20,17 @@ export abstract class BaseAction implements Entity {
     public id: string;
     public isSelected: boolean = false;
     public config: ActionConfig = { preEvent: 'inmediato', postEvent: 'inmediato' };
+    public sceneIndex: number = 0;
     
     public pathType: 'straight' | 'freehand' = 'straight';
     public points: {x: number, y: number}[] = [];
     public smoothingFactor: number = 5;
     
     public owner: IActionOwner | null = null;
+
+    // Metadata para AnimationManager
+    public abstract readonly movesPlayer: boolean;
+    public abstract readonly ballInteraction: 'none' | 'carry' | 'propel'; 
 
     constructor(
         public type: ActionType,
@@ -112,6 +117,72 @@ export abstract class BaseAction implements Entity {
             this.endY = y;
             if (this.owner) this.owner.updateActionChain();
         }
+    }
+
+    public getPathLength(): number {
+        if (this.pathType === 'straight') {
+            return Math.hypot(this.endX - this.startX, this.endY - this.startY);
+        } else {
+            const points = this.getSmoothedPolyline();
+            let len = 0;
+            for (let i = 0; i < points.length - 1; i++) {
+                len += Math.hypot(points[i+1].x - points[i].x, points[i+1].y - points[i].y);
+            }
+            return len;
+        }
+    }
+
+    public getPositionAt(t: number): {x: number, y: number} {
+        t = Math.max(0, Math.min(1, t));
+        
+        if (this.pathType === 'straight') {
+            return {
+                x: this.startX + (this.endX - this.startX) * t,
+                y: this.startY + (this.endY - this.startY) * t
+            };
+        } else {
+            const points = this.getSmoothedPolyline();
+            if (points.length < 2) return {x: this.startX, y: this.startY};
+            
+            const totalLen = this.getPathLength();
+            const targetDist = totalLen * t;
+            
+            let currentDist = 0;
+            for (let i = 0; i < points.length - 1; i++) {
+                const segLen = Math.hypot(points[i+1].x - points[i].x, points[i+1].y - points[i].y);
+                if (currentDist + segLen >= targetDist) {
+                    const segT = (targetDist - currentDist) / segLen;
+                    return {
+                        x: points[i].x + (points[i+1].x - points[i].x) * segT,
+                        y: points[i].y + (points[i+1].y - points[i].y) * segT
+                    };
+                }
+                currentDist += segLen;
+            }
+            return points[points.length - 1];
+        }
+    }
+
+    public getHeadingAt(t: number): number {
+        // Si no mueve al jugador (ej: pase estático), no tiene heading definido (null o mantener anterior)
+        // Pero para simplificar, calculamos la tangente del path visual.
+        
+        // Muestrear un punto ligeramente adelante para obtener la tangente
+        const step = 0.01;
+        const t1 = t;
+        const t2 = Math.min(1, t + step);
+        
+        let p1, p2;
+
+        if (t1 >= 0.99) {
+            p1 = this.getPositionAt(t1 - step);
+            p2 = this.getPositionAt(t1);
+        } else {
+            p1 = this.getPositionAt(t1);
+            p2 = this.getPositionAt(t2);
+        }
+
+        return Math.atan2(p2.y - p1.y, p2.x - p1.x);
     }
 
     protected getSmoothedPolyline(): {x: number, y: number}[] {
@@ -262,6 +333,10 @@ export abstract class BaseAction implements Entity {
 
 export class RunAction extends BaseAction {
     public speed: number | null = null; // null = disabled
+    
+    public readonly movesPlayer = true;
+    public readonly ballInteraction = 'none';
+
     constructor(startX: number, startY: number, endX: number, endY: number) {
         super('run', startX, startY, endX, endY);
     }
@@ -278,6 +353,10 @@ export class RunAction extends BaseAction {
 export class PassAction extends BaseAction {
     public speed: number | null = null;
     public gesture: string = 'push';
+    
+    public readonly movesPlayer = false;
+    public readonly ballInteraction = 'propel';
+
     constructor(startX: number, startY: number, endX: number, endY: number) {
         super('pass', startX, startY, endX, endY);
     }
@@ -293,6 +372,9 @@ export class DribbleAction extends BaseAction {
     public speed: number | null = null;
     public dribbleType: string = 'derecho';
     public style: 'straight' | 'zigzag' = 'straight';
+
+    public readonly movesPlayer = true;
+    public readonly ballInteraction = 'carry';
 
     constructor(startX: number, startY: number, endX: number, endY: number) {
         super('dribble', startX, startY, endX, endY);
@@ -441,6 +523,10 @@ export class DribbleAction extends BaseAction {
 export class ShootAction extends BaseAction {
     public speed: number | null = null;
     public gesture: string = 'pegada';
+
+    public readonly movesPlayer = false;
+    public readonly ballInteraction = 'propel';
+
     constructor(startX: number, startY: number, endX: number, endY: number) {
         super('shoot', startX, startY, endX, endY);
     }
@@ -452,6 +538,10 @@ export class ShootAction extends BaseAction {
 
 export class TackleAction extends BaseAction {
     public radius: number = 25;
+    
+    public readonly movesPlayer = false;
+    public readonly ballInteraction = 'none';
+
     constructor(startX: number, startY: number, endX: number, endY: number) {
         super('tackle', startX, startY, endX, endY);
     }
@@ -469,6 +559,10 @@ export class TackleAction extends BaseAction {
 
 export class TurnAction extends BaseAction {
     public angle: number = 0;
+
+    public readonly movesPlayer = false;
+    public readonly ballInteraction = 'none';
+
     constructor(startX: number, startY: number, endX: number, endY: number) {
         super('turn', startX, startY, endX, endY);
     }

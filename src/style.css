@@ -117,7 +117,14 @@ body {
 }
 
 .tools-grid.hidden {
-  display: none;
+  display: none !important;
+}
+
+/* Panel de reproducción: layout en fila cuando está visible */
+.tools-grid.play-tools-panel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .tool-btn {
