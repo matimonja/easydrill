@@ -114,6 +114,51 @@ export abstract class BaseAction implements Entity {
         }
     }
 
+    protected getSmoothedPolyline(): {x: number, y: number}[] {
+        const points = this.points;
+        const factor = Math.max(1, this.smoothingFactor);
+        
+        if (points.length < 3 || factor <= 1) return points;
+
+        const sampled = [];
+        for (let i = 0; i < points.length; i += Math.ceil(factor)) {
+            sampled.push(points[i]);
+        }
+        if (sampled[sampled.length - 1] !== points[points.length - 1]) {
+            sampled.push(points[points.length - 1]);
+        }
+        
+        if (sampled.length < 2) return points;
+
+        const polyline: {x: number, y: number}[] = [];
+        polyline.push(sampled[0]);
+        
+        let currentPos = sampled[0];
+
+        // Draw Curve using Sampled Points logic from drawArrowPath but generating points
+        for (let i = 1; i < sampled.length - 1; i++) {
+             const cp = sampled[i];
+             const next = sampled[i+1];
+             const ep = { x: (cp.x + next.x) / 2, y: (cp.y + next.y) / 2 };
+             
+             // Quadratic Bezier from currentPos to ep via cp
+             const steps = 10;
+             for (let t = 1; t <= steps; t++) {
+                 const T = t/steps;
+                 const iT = 1-T;
+                 const x = iT*iT*currentPos.x + 2*iT*T*cp.x + T*T*ep.x;
+                 const y = iT*iT*currentPos.y + 2*iT*T*cp.y + T*T*ep.y;
+                 polyline.push({x, y});
+             }
+             currentPos = ep;
+        }
+        
+        // Final line segment
+        polyline.push(sampled[sampled.length - 1]);
+        
+        return polyline;
+    }
+
     protected drawArrowPath(ctx: CanvasRenderingContext2D, color: string, dashed: boolean) {
         ctx.beginPath();
         
@@ -247,12 +292,145 @@ export class PassAction extends BaseAction {
 export class DribbleAction extends BaseAction {
     public speed: number | null = null;
     public dribbleType: string = 'derecho';
+    public style: 'straight' | 'zigzag' = 'straight';
+
     constructor(startX: number, startY: number, endX: number, endY: number) {
         super('dribble', startX, startY, endX, endY);
     }
+
     draw(ctx: CanvasRenderingContext2D) {
-        this.drawArrowPath(ctx, '#ef4444', false);
+        if (this.style === 'zigzag') {
+            this.drawZigZag(ctx, '#ef4444');
+        } else {
+            this.drawArrowPath(ctx, '#ef4444', false);
+        }
     }
+
+    private drawZigZag(ctx: CanvasRenderingContext2D, color: string) {
+        ctx.beginPath();
+        const amplitude = 5;
+        const frequency = 0.2;
+        
+        let arrowX = this.endX;
+        let arrowY = this.endY;
+        let arrowAngle = 0;
+
+        if (this.pathType === 'straight') {
+            const dx = this.endX - this.startX;
+            const dy = this.endY - this.startY;
+            const dist = Math.hypot(dx, dy);
+            const angle = Math.atan2(dy, dx);
+            arrowAngle = angle;
+            
+            ctx.save();
+            ctx.translate(this.startX, this.startY);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            
+            const arrowLen = 15;
+            const waveEnd = Math.max(0, dist - arrowLen);
+            const steps = Math.max(Math.ceil(waveEnd / 2), 2);
+            
+            for (let i = 0; i <= steps; i++) {
+                const x = (i / steps) * waveEnd;
+                // Fade in/out or just constant? User wants final part straight.
+                // Let's just do constant amplitude until waveEnd
+                const y = amplitude * Math.sin(x * frequency);
+                ctx.lineTo(x, y);
+            }
+            
+            // Straight line to tip
+            ctx.lineTo(dist, 0);
+            
+            ctx.strokeStyle = this.isSelected ? '#fff' : color;
+            ctx.lineWidth = 2;
+            ctx.setLineDash([]);
+            ctx.stroke();
+            ctx.restore();
+            
+        } else {
+            // Freehand ZigZag with Smoothing and Dampening
+            if (this.points.length < 2) return;
+            
+            const pts = this.getSmoothedPolyline();
+            
+            // Calculate total length for dampening
+            let totalLen = 0;
+            for(let i=0; i<pts.length-1; i++) {
+                totalLen += Math.hypot(pts[i+1].x - pts[i].x, pts[i+1].y - pts[i].y);
+            }
+
+            ctx.beginPath();
+            let distAcc = 0;
+            
+            // Start
+            ctx.moveTo(pts[0].x, pts[0].y);
+            
+            // Determine arrow angle from last few pixels
+            if (pts.length > 1) {
+                const last = pts[pts.length-1];
+                const prev = pts[Math.max(0, pts.length-5)]; // Look back a bit
+                arrowX = last.x;
+                arrowY = last.y;
+                arrowAngle = Math.atan2(last.y - prev.y, last.x - prev.x);
+            }
+
+            for (let i = 1; i < pts.length; i++) {
+                const p0 = pts[i-1];
+                const p1 = pts[i];
+                const dx = p1.x - p0.x;
+                const dy = p1.y - p0.y;
+                const d = Math.hypot(dx, dy);
+                if (d === 0) continue;
+                
+                // Normal vector
+                const nx = -dy / d;
+                const ny = dx / d;
+                
+                // Subdivide segment for smooth wave
+                const segSteps = Math.max(1, Math.ceil(d / 2));
+                
+                for (let j = 1; j <= segSteps; j++) {
+                    const t = j / segSteps;
+                    const curDist = distAcc + t * d;
+                    
+                    // Base position on path
+                    const bx = p0.x + t * dx;
+                    const by = p0.y + t * dy;
+                    
+                    // Dampening near end (last 30px)
+                    const remaining = totalLen - curDist;
+                    const damp = (remaining < 30) ? (remaining / 30) : 1;
+                    
+                    const offset = amplitude * Math.sin(curDist * frequency) * damp;
+                    
+                    ctx.lineTo(bx + nx * offset, by + ny * offset);
+                }
+                
+                distAcc += d;
+            }
+            
+            ctx.strokeStyle = this.isSelected ? '#fff' : color;
+            ctx.lineWidth = 2;
+            ctx.setLineDash([]);
+            ctx.stroke();
+        }
+
+        // Draw Arrow Head
+        ctx.save();
+        ctx.translate(arrowX, arrowY);
+        ctx.rotate(arrowAngle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-10, 5);
+        ctx.lineTo(-10, -5);
+        ctx.closePath();
+        ctx.fillStyle = this.isSelected ? '#fff' : color;
+        ctx.fill();
+        ctx.restore();
+    }
+
     getFinalPosition() { 
         if (this.pathType === 'straight') return { x: this.endX, y: this.endY };
         if (this.points.length > 0) return this.points[this.points.length - 1];

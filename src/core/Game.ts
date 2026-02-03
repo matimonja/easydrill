@@ -401,7 +401,78 @@ export class Game implements IGameContext {
           });
 
       } else if (tool === 'player') {
-          propertiesPanel.innerHTML = '<span class="placeholder-text-small">Haga clic en el campo para crear un Jugador</span>';
+          const playerTool = this.tools.get('player') as PlayerTool;
+          const currentTeam = playerTool.getTeam();
+          const currentColor = playerTool.getColor();
+          const currentQty = playerTool.getQuantity();
+
+          const pastelColors = [
+              '#FFB3BA', '#FFDFBA', '#FFFFBA', '#BAFFC9', 
+              '#BAE1FF', '#E2C9FF', '#FFFFFF', '#000000',
+              '#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#a855f7'
+          ];
+          
+          let colorPaletteHtml = '<div class="color-palette">';
+          pastelColors.forEach(c => {
+              colorPaletteHtml += `<div class="color-swatch" style="background-color: ${c}" data-color="${c}"></div>`;
+          });
+          colorPaletteHtml += '</div>';
+
+          propertiesPanel.innerHTML = `
+             <div class="prop-info">
+                <span class="prop-label">Crear Jugador</span>
+                <span class="prop-value">Configuración</span>
+             </div>
+             <div class="separator-vertical" style="height: 20px; margin: 0 10px;"></div>
+             
+             <div class="menu-control-group" style="margin-bottom: 0; width: 120px;">
+                  <label class="menu-label">Equipo</label>
+                  <select id="create-player-team" class="menu-select">
+                      <option value="A" ${currentTeam === 'A' ? 'selected' : ''}>Equipo A</option>
+                      <option value="B" ${currentTeam === 'B' ? 'selected' : ''}>Equipo B</option>
+                  </select>
+             </div>
+
+             <div class="menu-control-group" style="margin-bottom: 0; min-width: 200px;">
+                  <label class="menu-label">Color</label>
+                  ${colorPaletteHtml}
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                     <span style="font-size: 0.8rem; color: #888;">Personalizado:</span>
+                     <input type="color" id="create-player-color" class="menu-input" value="${currentColor}" style="flex: 1; height: 30px;">
+                  </div>
+             </div>
+
+             <div class="menu-control-group" style="margin-bottom: 0; width: 100px;">
+                  <label class="menu-label">Cantidad: <span id="create-player-qty-val">${currentQty}</span></label>
+                  <input type="range" id="create-player-qty" class="menu-input" min="1" max="11" step="1" value="${currentQty}">
+             </div>
+          `;
+
+          // Listeners
+          document.getElementById('create-player-team')?.addEventListener('change', (e) => {
+              playerTool.setTeam((e.target as HTMLSelectElement).value);
+          });
+
+          document.getElementById('create-player-qty')?.addEventListener('input', (e) => {
+              const val = parseInt((e.target as HTMLInputElement).value) || 1;
+              playerTool.setQuantity(val);
+              document.getElementById('create-player-qty-val')!.textContent = val.toString();
+          });
+
+          propertiesPanel.querySelectorAll('.color-swatch').forEach(swatch => {
+              swatch.addEventListener('click', (e) => {
+                  const c = (e.target as HTMLElement).dataset.color;
+                  if (c) {
+                      playerTool.setColor(c);
+                      const input = document.getElementById('create-player-color') as HTMLInputElement;
+                      if (input) input.value = c;
+                  }
+              });
+          });
+
+          document.getElementById('create-player-color')?.addEventListener('input', (e) => {
+              playerTool.setColor((e.target as HTMLInputElement).value);
+          });
       
       } else if (tool === 'select') {
           if (this.selectedEntity) {
@@ -819,6 +890,13 @@ export class Game implements IGameContext {
                           <option value="aerea" ${p.dribbleType === 'aerea' ? 'selected' : ''}>Aérea</option>
                       </select>
                   </div>
+                  <div class="menu-control-group">
+                      <label class="menu-label">Visualización</label>
+                      <select id="action-dribble-style" class="menu-select">
+                          <option value="straight" ${p.style === 'straight' ? 'selected' : ''}>Flecha Recta</option>
+                          <option value="zigzag" ${p.style === 'zigzag' ? 'selected' : ''}>ZigZag (Onda)</option>
+                      </select>
+                  </div>
               `;
           }
 
@@ -1052,6 +1130,12 @@ export class Game implements IGameContext {
           document.getElementById('action-dribble-type')?.addEventListener('change', (e) => {
               if (p instanceof DribbleAction) {
                    p.dribbleType = (e.target as HTMLSelectElement).value;
+              }
+          });
+
+          document.getElementById('action-dribble-style')?.addEventListener('change', (e) => {
+              if (p instanceof DribbleAction) {
+                   p.style = (e.target as HTMLSelectElement).value as any;
               }
           });
 
