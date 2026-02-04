@@ -46,6 +46,9 @@ export class Game implements IGameContext {
   // Action UI State
   private currentActionType: ActionType = 'run';
   private currentActionLineType: 'straight' | 'freehand' = 'straight';
+  
+  // Optimization State
+  private useAIOptimization: boolean = false;
 
   constructor(canvasId: string) {
     const canvas = document.getElementById(canvasId) as HTMLCanvasElement;
@@ -317,10 +320,37 @@ export class Game implements IGameContext {
     const inputAnimSpeed = document.getElementById('anim-speed') as HTMLInputElement;
     const spanAnimSpeed = document.getElementById('anim-speed-val');
 
-    btnAnimPlay?.addEventListener('click', () => {
+    // Inject Optimization Toggle into Play Panel
+    const playPanel = document.getElementById('play-tools-panel');
+    if (playPanel) {
+        const toggleContainer = document.createElement('div');
+        toggleContainer.className = 'menu-control-group checkbox-wrapper';
+        toggleContainer.style.margin = '0 10px';
+        toggleContainer.style.background = 'rgba(0,0,0,0.2)';
+        toggleContainer.style.padding = '4px 8px';
+        toggleContainer.style.borderRadius = '4px';
+        
+        toggleContainer.innerHTML = `
+            <input type="checkbox" id="ai-opt-toggle">
+            <label class="menu-label" for="ai-opt-toggle" style="cursor:pointer; color: #a855f7; font-weight: bold;">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> AI Opt
+            </label>
+        `;
+        playPanel.insertBefore(toggleContainer, playPanel.firstChild);
+        
+        const toggle = toggleContainer.querySelector('#ai-opt-toggle') as HTMLInputElement;
+        toggle.addEventListener('change', (e) => {
+            this.useAIOptimization = (e.target as HTMLInputElement).checked;
+        });
+    }
+
+    btnAnimPlay?.addEventListener('click', async () => {
         if (this.animationManager.isPlaying) {
             this.animationManager.pause();
         } else {
+            if (this.useAIOptimization) {
+                await this.optimizeDrill();
+            }
             this.animationManager.play(this.currentScene, this.entities);
         }
         // Update Icon
@@ -1354,5 +1384,102 @@ export class Game implements IGameContext {
     this.tools.get(this.currentToolId)?.render(this.ctx);
 
     this.ctx.restore();
+  }
+
+  // --- Optimization Logic ---
+
+  private async optimizeDrill() {
+      const btnAnimPlay = document.getElementById('anim-play');
+      const originalIcon = btnAnimPlay?.innerHTML;
+      
+      // Loading State
+      if (btnAnimPlay) {
+          btnAnimPlay.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+          btnAnimPlay.style.pointerEvents = 'none';
+      }
+
+      try {
+          const state = this.serializeDrillState();
+          
+          const response = await fetch('/api/optimize-drill', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(state)
+          });
+
+          if (response.ok) {
+              const optimizedState = await response.json();
+              this.applyOptimizedState(optimizedState);
+              console.log('Drill optimized successfully');
+          } else {
+              console.error('Optimization failed:', response.statusText);
+          }
+      } catch (error) {
+          console.error('Error optimizing drill:', error);
+      } finally {
+          if (btnAnimPlay && originalIcon) {
+              btnAnimPlay.innerHTML = originalIcon;
+              btnAnimPlay.style.pointerEvents = 'auto';
+          }
+      }
+  }
+
+  private serializeDrillState(): any {
+      const players = this.entities
+          .filter(e => e instanceof Player)
+          .map(p => {
+              const player = p as Player;
+              return {
+                  id: player.id,
+                  x: player.x,
+                  y: player.y,
+                  initialX: player.initialX,
+                  initialY: player.initialY,
+                  number: player.number,
+                  hasBall: player.hasBall,
+                  team: player.team,
+                  actions: player.actions.map(a => ({
+                      id: a.id,
+                      type: a.type,
+                      startX: a.startX,
+                      startY: a.startY,
+                      endX: a.endX,
+                      endY: a.endY,
+                      config: a.config,
+                      pathType: a.pathType,
+                      points: a.points,
+                      sceneIndex: a.sceneIndex,
+                      speed: (a as any).speed || null,
+                      waitBefore: (a as any).waitBefore || 0,
+                      // Specific props
+                      gesture: (a as any).gesture,
+                      dribbleType: (a as any).dribbleType,
+                      style: (a as any).style,
+                      radius: (a as any).radius,
+                      angle: (a as any).angle
+                  }))
+              };
+          });
+
+      return { players };
+  }
+
+  private applyOptimizedState(optimizedState: any) {
+      if (!optimizedState.players) return;
+
+      optimizedState.players.forEach((optPlayer: any) => {
+          const localPlayer = this.entities.find(e => e.id === optPlayer.id) as Player;
+          if (localPlayer) {
+              // Apply optimization params to actions
+              localPlayer.actions.forEach(localAction => {
+                  const optAction = optPlayer.actions.find((a: any) => a.id === localAction.id);
+                  if (optAction) {
+                      // Apply speed and waitBefore
+                      if (optAction.speed !== undefined) (localAction as any).speed = optAction.speed;
+                      if (optAction.waitBefore !== undefined) (localAction as any).waitBefore = optAction.waitBefore;
+                  }
+              });
+          }
+      });
   }
 }

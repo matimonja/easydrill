@@ -1,0 +1,338 @@
+/* Marketplace – página dedicada con búsqueda y filtros */
+
+.marketplace-page {
+  min-height: 100vh;
+  background: var(--home-bg);
+  color: var(--home-text);
+}
+
+.marketplace-main {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1.5rem 3rem;
+}
+
+.marketplace-hero {
+  padding: 2rem 0 1.5rem;
+  text-align: center;
+}
+
+.marketplace-hero h1 {
+  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+  color: var(--home-text);
+}
+
+.marketplace-hero p {
+  color: var(--home-muted);
+  font-size: 1rem;
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+/* Layout: filtros + grid */
+.marketplace-layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .marketplace-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Panel de filtros */
+.marketplace-filters {
+  background: var(--home-surface);
+  border: 2px solid var(--home-border);
+  border-radius: 14px;
+  padding: 1.25rem;
+  position: sticky;
+  top: 1rem;
+}
+
+.marketplace-filters h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--home-text);
+}
+
+.filter-group {
+  margin-bottom: 1rem;
+}
+
+.filter-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--home-muted);
+  margin-bottom: 0.4rem;
+}
+
+.search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--home-card);
+  border: 2px solid var(--home-border);
+  border-radius: 10px;
+}
+
+.search-wrap:focus-within {
+  border-color: var(--marker-blue);
+  outline: none;
+}
+
+.search-wrap i {
+  color: var(--home-muted);
+  font-size: 0.9rem;
+}
+
+.search-input {
+  flex: 1;
+  border: none;
+  background: none;
+  font-size: 0.95rem;
+  color: var(--home-text);
+}
+
+.search-input::placeholder {
+  color: var(--home-muted);
+}
+
+.search-input:focus {
+  outline: none;
+}
+
+.filter-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.filter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 0.35rem 0.6rem;
+  border-radius: 8px;
+  border: 2px solid var(--home-border);
+  background: var(--home-card);
+  color: var(--home-muted);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, color 0.2s;
+}
+
+.filter-tag:hover {
+  border-color: var(--marker-blue);
+  color: var(--marker-blue);
+  background: var(--marker-soft-blue);
+}
+
+.filter-tag.active {
+  border-color: var(--marker-blue);
+  background: var(--marker-soft-blue);
+  color: var(--marker-blue);
+}
+
+.filter-reset {
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--home-muted);
+  background: transparent;
+  border: 2px solid var(--home-border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.filter-reset:hover {
+  border-color: var(--marker-blue);
+  color: var(--marker-blue);
+}
+
+/* Contenido: toolbar + grid */
+.marketplace-content {
+  min-height: 200px;
+}
+
+.marketplace-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.marketplace-count {
+  font-size: 0.9rem;
+  color: var(--home-muted);
+}
+
+.marketplace-sort {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.marketplace-sort label {
+  font-size: 0.85rem;
+  color: var(--home-muted);
+}
+
+.sort-select {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.9rem;
+  border: 2px solid var(--home-border);
+  border-radius: 8px;
+  background: var(--home-card);
+  color: var(--home-text);
+  cursor: pointer;
+}
+
+.sort-select:focus {
+  border-color: var(--marker-blue);
+  outline: none;
+}
+
+/* Grid de tarjetas (reutiliza clases de home para tarjetas) */
+.marketplace-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.25rem;
+}
+
+.marketplace-card {
+  background: var(--home-card);
+  border-radius: 14px;
+  border: 2px solid var(--home-border);
+  overflow: hidden;
+  transition: border-color 0.2s, transform 0.15s;
+  display: flex;
+  flex-direction: column;
+}
+
+.marketplace-card:hover {
+  border-color: var(--marker-blue);
+  transform: translateY(-2px);
+}
+
+.marketplace-card .carousel-thumb {
+  aspect-ratio: 16/10;
+  background: linear-gradient(135deg, var(--home-border) 0%, #e0e0dc 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.marketplace-card .carousel-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.marketplace-card .carousel-thumb-placeholder {
+  color: var(--home-muted);
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.marketplace-card .carousel-body {
+  padding: 1.15rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.marketplace-card .carousel-body h4 {
+  font-size: 1.05rem;
+  margin: 0 0 0.4rem;
+  color: var(--home-text);
+}
+
+.marketplace-card .carousel-body p {
+  font-size: 0.85rem;
+  color: var(--home-muted);
+  margin: 0 0 0.75rem;
+  line-height: 1.4;
+  flex: 1;
+}
+
+.marketplace-card .carousel-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.marketplace-card .carousel-tags .tag {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+}
+
+.marketplace-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--home-border);
+}
+
+.marketplace-card-actions .card-action-link,
+.marketplace-card-actions .card-action-fork {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.marketplace-card-actions .card-action-fork {
+  color: var(--home-muted);
+}
+
+.marketplace-card-actions .card-action-fork:hover {
+  color: var(--marker-violet);
+}
+
+/* Estado vacío */
+.marketplace-empty {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: var(--home-muted);
+}
+
+.marketplace-empty i {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.marketplace-empty p {
+  margin-bottom: 1rem;
+}
+
+.marketplace-empty .filter-reset {
+  width: auto;
+  display: inline-block;
+  padding: 0.5rem 1rem;
+}

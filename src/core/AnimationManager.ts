@@ -22,7 +22,10 @@ interface PlayerAnimState {
     actionQueue: BaseAction[];
     timeInAction: number;       
     duration: number;           
-    isWaitingForBall: boolean;  
+    isWaitingForBall: boolean;
+    // Delay logic
+    isWaitingDelay: boolean;
+    delayTimer: number;
     hasBall: boolean;           
 }
 
@@ -185,6 +188,8 @@ export class AnimationManager {
             timeInAction: 0,
             duration: 0,
             isWaitingForBall: false,
+            isWaitingDelay: false,
+            delayTimer: 0,
             hasBall: player.hasBall
         });
 
@@ -245,6 +250,17 @@ export class AnimationManager {
     private updatePlayer(player: Player, dt: number) {
         const state = this.playerStates.get(player.id);
         if (!state) return;
+
+        // 0. Handle Pre-Action Delay (Optimization)
+        if (state.isWaitingDelay) {
+            state.delayTimer -= dt;
+            if (state.delayTimer <= 0) {
+                state.isWaitingDelay = false;
+                // Start the action now
+                this.startAction(player, state);
+            }
+            return; // Don't do anything else while waiting
+        }
 
         // A. Intentar agarrar bocha
         if (!state.hasBall) {
@@ -321,19 +337,35 @@ export class AnimationManager {
         const nextAction = state.actionQueue[0];
         
         if (nextAction) {
-            if (this.canStartAction(nextAction, state.hasBall)) {
-                state.currentAction = state.actionQueue.shift()!;
-                state.timeInAction = 0;
-                state.duration = this.calculateDuration(state.currentAction);
-                state.isWaitingForBall = false;
+            // Check optimization delay first
+            if (nextAction.waitBefore > 0 && !state.isWaitingDelay) {
+                // Remove from queue but enter wait state
+                state.actionQueue.shift();
+                state.currentAction = nextAction; // Hold it as current but waiting
+                state.isWaitingDelay = true;
+                state.delayTimer = nextAction.waitBefore;
+                return;
+            }
 
-                // Si la acción propulsa la bola (Pase/Tiro), soltarla
-                if (state.currentAction.ballInteraction === 'propel') {
-                    this.releaseBall(player, state);
-                }
+            if (this.canStartAction(nextAction, state.hasBall)) {
+                state.actionQueue.shift();
+                state.currentAction = nextAction;
+                this.startAction(player, state);
             } else {
                 state.isWaitingForBall = true;
             }
+        }
+    }
+
+    private startAction(player: Player, state: PlayerAnimState) {
+        const action = state.currentAction!;
+        state.timeInAction = 0;
+        state.duration = this.calculateDuration(action);
+        state.isWaitingForBall = false;
+
+        // Si la acción propulsa la bola (Pase/Tiro), soltarla
+        if (action.ballInteraction === 'propel') {
+            this.releaseBall(player, state);
         }
     }
 

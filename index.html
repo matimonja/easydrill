@@ -4,108 +4,158 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Pizarra Táctica Deportiva</title>
-    <link rel="stylesheet" href="./src/style.css">
-    <!-- Font Awesome for Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>EasyDrill – Planificación y ejercicios para tu deporte</title>
+    <link rel="stylesheet" href="/src/home.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   </head>
-  <body>
-    <div id="app">
-      
-      <!-- Area del Juego (Canvas + Menú Secundario Flotante) -->
-      <div id="game-container">
-        
-        <!-- Menú Secundario (Izquierda, Colapsable) -->
-        <div id="secondary-menu" class="secondary-menu collapsed">
-            <div class="menu-header">
-                <span>Opciones</span>
-                <button id="btn-collapse-menu" class="icon-btn"><i class="fa-solid fa-chevron-left"></i></button>
-            </div>
-            <div class="menu-content">
-                <p class="placeholder-text">Configuraciones del elemento seleccionado...</p>
-                <!-- Aquí irán opciones extra -->
-            </div>
-        </div>
-        
-        <!-- Botón para abrir menú si está colapsado -->
-        <button id="btn-open-menu" class="floating-toggle"><i class="fa-solid fa-bars"></i></button>
+  <body class="home">
+    <header class="home-header">
+      <span class="home-logo">EasyDrill</span>
+      <nav class="home-nav">
+        <a href="#profile-content">Tu perfil</a>
+        <a href="marketplace.html">Marketplace</a>
+        <a href="editor.html">Abrir pizarrón</a>
+        <a href="#login" class="home-nav-login">Iniciar sesión</a>
+      </nav>
+    </header>
 
-        <!-- Canvas -->
-        <canvas id="gameCanvas"></canvas>
+    <section class="home-hero">
+      <canvas class="hero-bg-canvas" id="hero-bg-canvas" aria-hidden="true"></canvas>
+      <div class="home-hero-content">
+      <h1>Planificá tus entrenamientos con claridad</h1>
+      <p>Creá ejercicios tácticos, compartí con tu equipo y coordiná canchas y categorías desde un solo lugar.</p>
+      <a href="editor.html" class="home-cta-primary">
+        <i class="fa-solid fa-pen-ruler"></i> Crear ejercicio en el pizarrón
+      </a>
+      </div>
+    </section>
+
+    <section class="home-section" id="perfil">
+      <h2 class="home-section-title">¿Cómo vas a usar EasyDrill?</h2>
+      <div class="profile-cards">
+        <button type="button" class="profile-card active" data-profile="entrenador" aria-pressed="true">
+          <h3><i class="fa-solid fa-person-chalkboard"></i> Entrenador</h3>
+          <p>Armá y organizá tus ejercicios, planificá jornadas y evaluá a tus jugadoras.</p>
+        </button>
+        <button type="button" class="profile-card" data-profile="club" aria-pressed="false">
+          <h3><i class="fa-solid fa-building"></i> Coordinador / Club</h3>
+          <p>Gestioná espacios, validá planificaciones por categoría y acompañá a los entrenadores.</p>
+        </button>
       </div>
 
-      <!-- Menú Principal (Inferior, Horizontal) -->
-      <div id="main-toolbar" class="main-toolbar">
-        
-        <!-- Sección 1: Modos (Edición/Reproducción) -->
-        <div class="toolbar-section section-modes">
-            <button id="btn-mode-edit" class="mode-btn active" title="Modo Edición">
-                <i class="fa-solid fa-pen-ruler"></i>
-            </button>
-            <button id="btn-mode-play" class="mode-btn" title="Modo Reproducción">
-                <i class="fa-solid fa-play"></i>
-            </button>
+      <div class="profile-content" id="profile-content" data-profile="entrenador" aria-labelledby="perfil">
+        <div class="entrenador-only">
+          <h3 style="margin-bottom: 1rem;">Para entrenadores</h3>
+          <ul>
+            <li>Armá tu carpeta de ejercicios y organizala por categoría o fecha.</li>
+            <li>Buscá y continuá o mejorá el ejercicio de otro entrenador.</li>
+            <li>Compartí tus ideas con la comunidad.</li>
+            <li>Planificá tus jornadas de entrenamiento.</li>
+            <li>Evaluá a tus jugadoras.</li>
+          </ul>
         </div>
-
-        <div class="separator-vertical"></div>
-
-        <!-- Sección 2: Herramientas (Cambia según el modo) -->
-        <div class="toolbar-section section-tools">
-            
-            <!-- Herramientas de Edición -->
-            <div id="edit-tools-panel" class="tools-grid">
-                <button class="tool-btn active" id="tool-select" title="Seleccionar (V)">
-                    <i class="fa-solid fa-arrow-pointer"></i>
-                </button>
-                <button class="tool-btn" id="tool-player" title="Crear Jugador (P)">
-                    <i class="fa-solid fa-user"></i>
-                </button>
-                <button class="tool-btn" id="tool-shape" title="Formas (S)">
-                    <i class="fa-solid fa-shapes"></i>
-                </button>
-                <button class="tool-btn" id="tool-exercise" title="Objetos (O)">
-                    <i class="fa-solid fa-cube"></i>
-                </button>
-                <button class="tool-btn" id="tool-camera" title="Cámara (C)">
-                    <i class="fa-solid fa-camera"></i>
-                </button>
-                
-                <!-- Fila 2 -->
-                <button class="tool-btn" id="action-undo" title="Deshacer (Ctrl+Z)">
-                    <i class="fa-solid fa-rotate-left"></i>
-                </button>
-                <button class="tool-btn" id="action-redo" title="Rehacer (Ctrl+Y)">
-                    <i class="fa-solid fa-rotate-right"></i>
-                </button>
-            </div>
-
-            <!-- Herramientas de Reproducción -->
-            <div id="play-tools-panel" class="tools-grid play-tools-panel hidden">
-                <button class="tool-btn" id="anim-play" title="Reproducir/Pausar"><i class="fa-solid fa-play"></i></button>
-                <button class="tool-btn" id="anim-stop" title="Detener/Reiniciar"><i class="fa-solid fa-stop"></i></button>
-                
-                <div style="display: flex; align-items: center; gap: 5px; margin-left: 10px;">
-                    <i class="fa-solid fa-gauge-high" style="color: #888; font-size: 0.8rem;"></i>
-                    <input type="range" id="anim-speed" class="menu-input" min="0.5" max="3.0" step="0.1" value="1.0" style="width: 100px;">
-                    <span id="anim-speed-val" style="font-size: 0.8rem; color: #fff; min-width: 30px;">1.0x</span>
-                </div>
-            </div>
-
+        <div class="club-only">
+          <h3 style="margin-bottom: 1rem;">Para clubes y coordinadores</h3>
+          <ul>
+            <li>Coordina los espacios de cancha y horarios.</li>
+            <li>Validá los ejercicios y planificaciones para cada categoría.</li>
+            <li>Ayudá a crecer a los nuevos entrenadores.</li>
+          </ul>
         </div>
-
-        <div class="separator-vertical"></div>
-
-        <!-- Sección 3: Propiedades Contextuales -->
-        <div class="toolbar-section section-properties">
-            <div id="properties-panel" class="properties-content">
-                <span class="placeholder-text-small">Seleccione una herramienta...</span>
-            </div>
-        </div>
-
       </div>
+    </section>
 
-    </div>
-    <script type="module" src="/src/main.ts"></script>
+    <section class="home-marketplace" id="marketplace">
+      <h2 class="home-section-title">Ejercicios destacados</h2>
+      <p class="home-marketplace-intro">
+        Descubrí ejercicios compartidos por la comunidad. Usalos como base y adaptalos a tu equipo.
+      </p>
+      <div class="carousel-wrap">
+        <button type="button" class="carousel-btn carousel-btn-prev" aria-label="Anterior"><i class="fa-solid fa-chevron-left"></i></button>
+        <div class="carousel" id="home-carousel">
+          <article class="carousel-card" data-drill-id="1">
+            <div class="carousel-thumb" aria-hidden="true">
+              <span class="carousel-thumb-placeholder"><i class="fa-solid fa-play"></i> Vista previa</span>
+            </div>
+            <div class="carousel-body">
+              <h4>Ronda de pases en triángulo</h4>
+              <p>Ejercicio de posesión y movimiento para mediocampo. Ideal para calentar o trabajar apoyos.</p>
+              <div class="carousel-tags">
+                <span class="tag tag-blue">Pases</span>
+                <span class="tag tag-green">Posesión</span>
+                <span class="tag tag-orange">Ataque</span>
+              </div>
+              <div class="carousel-card-actions">
+                <a href="editor.html?drill=1" class="card-action-link"><i class="fa-solid fa-pen-ruler"></i> Abrir en pizarrón</a>
+                <a href="editor.html?drill=1&fork=1" class="card-action-fork" title="Hacer fork: copiar a tu cuaderno"><i class="fa-solid fa-code-branch"></i> Fork</a>
+              </div>
+            </div>
+          </article>
+          <article class="carousel-card" data-drill-id="2">
+            <div class="carousel-thumb" aria-hidden="true">
+              <span class="carousel-thumb-placeholder"><i class="fa-solid fa-play"></i> Vista previa</span>
+            </div>
+            <div class="carousel-body">
+              <h4>Presión post pérdida</h4>
+              <p>Transición defensiva y recuperación rápida. Trabaja la reacción al perder el balón.</p>
+              <div class="carousel-tags">
+                <span class="tag tag-red">Defensa</span>
+                <span class="tag tag-violet">Transición</span>
+              </div>
+              <div class="carousel-card-actions">
+                <a href="editor.html?drill=2" class="card-action-link"><i class="fa-solid fa-pen-ruler"></i> Abrir en pizarrón</a>
+                <a href="editor.html?drill=2&fork=1" class="card-action-fork" title="Hacer fork: copiar a tu cuaderno"><i class="fa-solid fa-code-branch"></i> Fork</a>
+              </div>
+            </div>
+          </article>
+          <article class="carousel-card" data-drill-id="3">
+            <div class="carousel-thumb" aria-hidden="true">
+              <span class="carousel-thumb-placeholder"><i class="fa-solid fa-play"></i> Vista previa</span>
+            </div>
+            <div class="carousel-body">
+              <h4>Salida desde el arco</h4>
+              <p>Construcción desde atrás con apoyos y desmarques. Salida limpia bajo presión.</p>
+              <div class="carousel-tags">
+                <span class="tag tag-blue">Salida</span>
+                <span class="tag tag-green">Contención</span>
+              </div>
+              <div class="carousel-card-actions">
+                <a href="editor.html?drill=3" class="card-action-link"><i class="fa-solid fa-pen-ruler"></i> Abrir en pizarrón</a>
+                <a href="editor.html?drill=3&fork=1" class="card-action-fork" title="Hacer fork: copiar a tu cuaderno"><i class="fa-solid fa-code-branch"></i> Fork</a>
+              </div>
+            </div>
+          </article>
+          <article class="carousel-card" data-drill-id="4">
+            <div class="carousel-thumb" aria-hidden="true">
+              <span class="carousel-thumb-placeholder"><i class="fa-solid fa-play"></i> Vista previa</span>
+            </div>
+            <div class="carousel-body">
+              <h4>Rondo 4v2 en espacio reducido</h4>
+              <p>Mantener la pelota en superioridad numérica. Pases rápidos y movilidad.</p>
+              <div class="carousel-tags">
+                <span class="tag tag-orange">Posesión</span>
+                <span class="tag tag-red">Press</span>
+              </div>
+              <div class="carousel-card-actions">
+                <a href="editor.html?drill=4" class="card-action-link"><i class="fa-solid fa-pen-ruler"></i> Abrir en pizarrón</a>
+                <a href="editor.html?drill=4&fork=1" class="card-action-fork" title="Hacer fork: copiar a tu cuaderno"><i class="fa-solid fa-code-branch"></i> Fork</a>
+              </div>
+            </div>
+          </article>
+        </div>
+        <button type="button" class="carousel-btn carousel-btn-next" aria-label="Siguiente"><i class="fa-solid fa-chevron-right"></i></button>
+      </div>
+      <p class="home-marketplace-cta">
+        <a href="marketplace.html" class="home-link-cta">Ver todo el marketplace <i class="fa-solid fa-arrow-right"></i></a>
+      </p>
+    </section>
+
+    <section class="home-footer-cta">
+      <a href="editor.html" class="home-cta-primary">
+        <i class="fa-solid fa-pen-ruler"></i> Ir al pizarrón táctica
+      </a>
+    </section>
+
+    <script type="module" src="/src/home.ts"></script>
   </body>
 </html>
-

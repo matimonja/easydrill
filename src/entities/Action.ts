@@ -26,6 +26,10 @@ export abstract class BaseAction implements Entity {
     public points: {x: number, y: number}[] = [];
     public smoothingFactor: number = 5;
     
+    // Optimization
+    public waitBefore: number = 0; // seconds
+    public speed: number | null = null; // Some subclasses override/use this
+
     public owner: IActionOwner | null = null;
 
     // Metadata para AnimationManager
