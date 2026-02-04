@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Marketplace – EasyDrill</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <script type="module" crossorigin src="/assets/marketplace-CoTlU9u2.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-B5Qt9EMX.js">
+    <link rel="stylesheet" crossorigin href="/assets/marketplace-fY4T9JiX.css">
+    <link rel="stylesheet" crossorigin href="/assets/home-BTiX_AQA.css">
+  </head>
+  <body class="marketplace-page">
+    <header class="home-header">
+      <a href="index.html" class="home-logo">EasyDrill</a>
+      <nav class="home-nav">
+        <a href="index.html">Inicio</a>
+        <a href="index.html#marketplace">Destacados</a>
+        <a href="editor.html">Abrir pizarrón</a>
+        <a href="#login" class="home-nav-login">Iniciar sesión</a>
+      </nav>
+    </header>
+
+    <main class="marketplace-main">
+      <section class="marketplace-hero">
+        <h1>Marketplace de ejercicios</h1>
+        <p>Buscá y filtrá ejercicios por categoría, nivel o tipo. Usalos como base y adaptalos a tu equipo.</p>
+      </section>
+
+      <div class="marketplace-layout">
+        <aside class="marketplace-filters">
+          <h3><i class="fa-solid fa-sliders"></i> Filtros</h3>
+          <div class="filter-group">
+            <label class="filter-label">Búsqueda</label>
+            <div class="search-wrap">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="search" id="marketplace-search" placeholder="Nombre o descripción..." class="search-input" />
+            </div>
+          </div>
+          <div class="filter-group">
+            <label class="filter-label">Categoría / Tags</label>
+            <div class="filter-tags" id="filter-tags"></div>
+          </div>
+          <button type="button" class="filter-reset" id="filter-reset">Limpiar filtros</button>
+        </aside>
+
+        <div class="marketplace-content">
+          <div class="marketplace-toolbar">
+            <span class="marketplace-count" id="marketplace-count"></span>
+            <div class="marketplace-sort">
+              <label for="marketplace-sort">Ordenar</label>
+              <select id="marketplace-sort" class="sort-select">
+                <option value="relevance">Relevancia</option>
+                <option value="name-asc">Nombre A–Z</option>
+                <option value="name-desc">Nombre Z–A</option>
+              </select>
+            </div>
+          </div>
+          <div class="marketplace-grid" id="marketplace-grid"></div>
+          <div class="marketplace-empty" id="marketplace-empty" hidden>
+            <i class="fa-solid fa-inbox"></i>
+            <p>No hay ejercicios que coincidan con los filtros.</p>
+            <button type="button" class="filter-reset" id="empty-reset">Limpiar filtros</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+  </body>
+</html>
