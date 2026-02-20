@@ -1,3 +1,4 @@
+import { PointerLikeEvent } from './Tool';
 import { BaseTool } from './BaseTool';
 import { BaseShape, RectangleShape, EllipseShape, TriangleShape, LineShape, FreehandShape } from '../entities/Shape';
 import { AddEntityCommand } from '../core/Commands';
@@ -16,7 +17,7 @@ export class ShapeTool extends BaseTool {
         this.currentShapeType = type;
     }
 
-    onMouseDown(e: MouseEvent): void {
+    onMouseDown(e: PointerLikeEvent): void {
         const worldPos = this.getWorldPoint(e);
         this.isDrawing = true;
         this.drawStartPos = { x: worldPos.x, y: worldPos.y };
@@ -43,7 +44,7 @@ export class ShapeTool extends BaseTool {
         }
     }
 
-    onMouseMove(e: MouseEvent): void {
+    onMouseMove(e: PointerLikeEvent): void {
         if (!this.isDrawing || !this.tempShape || !this.drawStartPos) return;
 
         const worldPos = this.getWorldPoint(e);
@@ -81,7 +82,7 @@ export class ShapeTool extends BaseTool {
         }
     }
 
-    onMouseUp(e: MouseEvent): void {
+    onMouseUp(e: PointerLikeEvent): void {
         if (this.isDrawing && this.tempShape) {
             // Validation: Check if shape has minimal size
             let isValid = true;

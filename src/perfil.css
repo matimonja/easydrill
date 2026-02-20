@@ -1,0 +1,264 @@
+/* Página Tu perfil */
+
+.perfil-main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 1.5rem 3rem;
+}
+
+.perfil-header {
+  padding-bottom: 2rem;
+  border-bottom: 2px solid var(--home-border);
+}
+
+.perfil-avatar-wrap {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 1rem;
+}
+
+.perfil-avatar {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: var(--marker-soft-blue);
+  color: var(--marker-blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  border: 3px solid var(--home-border);
+}
+
+.perfil-avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.perfil-avatar-edit {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--home-card);
+  background: var(--marker-blue);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: transform 0.15s, background 0.2s;
+}
+
+.perfil-avatar-edit:hover {
+  background: var(--marker-violet);
+  transform: scale(1.05);
+}
+
+.perfil-name {
+  font-size: clamp(1.5rem, 4vw, 1.85rem);
+  font-weight: 800;
+  margin: 0 0 0.2rem;
+  color: var(--home-text);
+}
+
+.perfil-role {
+  font-size: 1rem;
+  color: var(--home-muted);
+  margin: 0 0 1rem;
+}
+
+.perfil-edit-link {
+  margin-top: 0.5rem;
+}
+
+.perfil-section {
+  padding: 2rem 0;
+  border-bottom: 2px solid var(--home-border);
+}
+
+.perfil-section:last-child {
+  border-bottom: none;
+}
+
+.perfil-section-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 0 0 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--home-text);
+}
+
+.perfil-section-title i {
+  color: var(--marker-blue);
+}
+
+.perfil-section-desc {
+  color: var(--home-muted);
+  font-size: 0.95rem;
+  margin: 0 0 1rem;
+}
+
+.perfil-bio-wrap {
+  background: var(--home-card);
+  border: 2px solid var(--home-border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.perfil-bio {
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--home-text);
+  margin: 0;
+}
+
+.perfil-inline-edit {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.perfil-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.perfil-stat-card {
+  background: var(--home-card);
+  border: 2px solid var(--home-border);
+  border-radius: 14px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  transition: border-color 0.2s, transform 0.15s;
+  text-decoration: none;
+  color: var(--home-text);
+}
+
+.perfil-stat-card:hover {
+  border-color: var(--marker-blue);
+  transform: translateY(-2px);
+  text-decoration: none;
+  color: var(--home-text);
+}
+
+.perfil-stat-cuaderno {
+  border-left: 4px solid var(--marker-green);
+}
+
+.perfil-stat-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--marker-soft-blue);
+  color: var(--marker-blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  margin-bottom: 0.75rem;
+}
+
+.perfil-stat-value {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--home-text);
+  line-height: 1.2;
+  margin-bottom: 0.2rem;
+}
+
+.perfil-stat-label {
+  font-size: 0.85rem;
+  color: var(--home-muted);
+  margin-bottom: 0.5rem;
+}
+
+.perfil-stat-link {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--marker-blue);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: auto;
+}
+
+.perfil-stat-card:hover .perfil-stat-link {
+  text-decoration: underline;
+}
+
+.perfil-block-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  background: var(--home-card);
+  border: 2px solid var(--home-border);
+  border-radius: 12px;
+  font-weight: 600;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.perfil-block-link:hover {
+  border-color: var(--marker-blue);
+  background: var(--marker-soft-blue);
+  text-decoration: none;
+}
+
+.perfil-extras-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.perfil-extra-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  margin-bottom: 0.5rem;
+  background: var(--home-card);
+  border: 2px solid var(--home-border);
+  border-radius: 12px;
+  text-decoration: none;
+  color: var(--home-text);
+  transition: border-color 0.2s;
+}
+
+.perfil-extra-item:hover {
+  border-color: var(--marker-violet);
+  text-decoration: none;
+  color: var(--home-text);
+}
+
+.perfil-extra-item i {
+  font-size: 1.25rem;
+  color: var(--marker-violet);
+  width: 1.5rem;
+  text-align: center;
+}
+
+.perfil-extra-item span {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.perfil-extra-item small {
+  display: block;
+  width: 100%;
+  margin-left: 2.25rem;
+  font-size: 0.85rem;
+  color: var(--home-muted);
+  font-weight: 400;
+}

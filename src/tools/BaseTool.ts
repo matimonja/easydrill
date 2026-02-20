@@ -1,5 +1,5 @@
 import { IGameContext } from '../core/Interfaces';
-import { Tool } from './Tool';
+import { Tool, PointerLikeEvent } from './Tool';
 
 /**
  * Abstract base class for tools.
@@ -8,9 +8,9 @@ import { Tool } from './Tool';
 export abstract class BaseTool implements Tool {
     constructor(protected game: IGameContext) {}
 
-    abstract onMouseDown(e: MouseEvent): void;
-    abstract onMouseMove(e: MouseEvent): void;
-    abstract onMouseUp(e: MouseEvent): void;
+    abstract onMouseDown(e: PointerLikeEvent): void;
+    abstract onMouseMove(e: PointerLikeEvent): void;
+    abstract onMouseUp(e: PointerLikeEvent): void;
 
     render(ctx: CanvasRenderingContext2D): void {}
 
@@ -18,9 +18,9 @@ export abstract class BaseTool implements Tool {
     deactivate(): void {}
 
     /**
-     * Helper to get world coordinates from a mouse event.
+     * Helper to get world coordinates from a pointer event (mouse or touch).
      */
-    protected getWorldPoint(e: MouseEvent): { x: number, y: number } {
+    protected getWorldPoint(e: PointerLikeEvent): { x: number, y: number } {
         const rect = this.game.canvas.getBoundingClientRect();
         const mouseX = e.clientX - rect.left;
         const mouseY = e.clientY - rect.top;

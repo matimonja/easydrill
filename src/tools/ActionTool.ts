@@ -1,3 +1,4 @@
+import { PointerLikeEvent } from './Tool';
 import { BaseTool } from './BaseTool';
 import { Player } from '../entities/Player';
 import { BaseAction, ActionType, RunAction, PassAction, DribbleAction, ShootAction, TackleAction, TurnAction } from '../entities/Action';
@@ -16,7 +17,7 @@ export class ActionTool extends BaseTool {
         this.lineType = lineType;
     }
 
-    onMouseDown(e: MouseEvent): void {
+    onMouseDown(e: PointerLikeEvent): void {
         if (!this.currentPlayer) return;
         
         const worldPos = this.getWorldPoint(e);
@@ -74,7 +75,7 @@ export class ActionTool extends BaseTool {
         this.isDrawing = true;
     }
 
-    onMouseMove(e: MouseEvent): void {
+    onMouseMove(e: PointerLikeEvent): void {
         if (this.isDrawing && this.tempAction) {
             const worldPos = this.getWorldPoint(e);
             
@@ -90,7 +91,7 @@ export class ActionTool extends BaseTool {
         }
     }
 
-    onMouseUp(e: MouseEvent): void {
+    onMouseUp(e: PointerLikeEvent): void {
         if (this.isDrawing && this.tempAction && this.currentPlayer) {
             this.game.commandManager.execute(new AddActionCommand(this.currentPlayer, this.tempAction));
             

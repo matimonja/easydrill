@@ -1,7 +1,6 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  // Por defecto base '/' (local y producción). GitHub Pages usa --base=/repo-name/ en el workflow.
   base: '/',
   build: {
     rollupOptions: {
@@ -9,6 +8,10 @@ export default defineConfig({
         main: 'index.html',
         editor: 'editor.html',
         marketplace: 'marketplace.html',
+        bolsa: 'bolsa-de-trabajo.html',
+        aprendizaje: 'aprendizaje.html',
+        comunidad: 'comunidad.html',
+        perfil: 'perfil.html',
       },
     },
   },

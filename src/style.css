@@ -56,6 +56,7 @@ body {
   flex: 1; 
   overflow: hidden;
   background: #111;
+  touch-action: none;
 }
 
 #gameCanvas {
@@ -63,6 +64,7 @@ body {
   width: 100%;
   height: 100%;
   cursor: crosshair;
+  touch-action: none; /* Prevent browser scroll/zoom on canvas for pan/pinch */
 }
 
 /* --- Main Toolbar --- */
@@ -239,23 +241,6 @@ body {
   background: #991b1b;
 }
 
-.prop-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.prop-label {
-  font-size: 0.75rem;
-  color: #888;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.prop-value {
-  font-size: 1rem;
-  font-weight: bold;
-}
-
 /* --- Secondary Menu --- */
 .secondary-menu {
   position: absolute;
@@ -420,5 +405,215 @@ body {
 .floating-toggle.hidden {
   opacity: 0;
   pointer-events: none;
+}
+
+/* --- Overlay "Rote el dispositivo" (solo portrait en móvil) --- */
+.rotate-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: var(--bg-dark);
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  box-sizing: border-box;
+}
+
+.rotate-overlay.visible {
+  display: flex;
+}
+
+.rotate-overlay-content {
+  text-align: center;
+  max-width: 280px;
+}
+
+.rotate-overlay-content i {
+  font-size: 4rem;
+  color: var(--accent-color);
+  margin-bottom: 1.5rem;
+  display: block;
+  animation: rotate-hint 2s ease-in-out infinite;
+}
+
+@keyframes rotate-hint {
+  0%, 100% { transform: rotate(-30deg); }
+  50% { transform: rotate(30deg); }
+}
+
+.rotate-overlay-content p {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--text-color);
+  line-height: 1.5;
+}
+
+/* Mostrar overlay solo en portrait en viewports pequeños (smartphones) */
+@media (max-width: 768px) and (orientation: portrait) {
+  .rotate-overlay {
+    display: flex;
+  }
+  .rotate-overlay.visible {
+    display: flex;
+  }
+}
+
+@media (max-width: 768px) and (orientation: landscape) {
+  .rotate-overlay {
+    display: none !important;
+  }
+}
+
+/* --- Botón colapsar toolbar (solo visible en móvil) --- */
+.main-toolbar {
+  position: relative;
+}
+
+.main-toolbar-content {
+  display: flex;
+  align-items: stretch;
+  flex: 1;
+  min-width: 0;
+}
+
+.toolbar-collapse-btn {
+  display: none;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  background: rgba(0,0,0,0.3);
+  border: none;
+  border-left: 1px solid var(--border-color);
+  color: var(--text-color);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.toolbar-collapse-btn:hover {
+  background: rgba(0,0,0,0.5);
+}
+
+.toolbar-collapse-btn i {
+  font-size: 1rem;
+  transition: transform 0.2s;
+}
+
+.main-toolbar.collapsed .toolbar-collapse-btn i.fa-chevron-down {
+  display: none;
+}
+
+.main-toolbar.collapsed .toolbar-collapse-btn i.fa-chevron-up {
+  display: inline-block;
+}
+
+.main-toolbar .toolbar-collapse-btn i.fa-chevron-up {
+  display: none;
+}
+
+/* --- Mobile / tablet: editor (small viewports) --- */
+@media (max-width: 768px) {
+  :root {
+    --toolbar-height: 72px;
+  }
+
+  .toolbar-collapse-btn {
+    display: flex;
+  }
+
+  .main-toolbar {
+    padding: 6px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    transition: height 0.25s ease, min-height 0.25s ease;
+  }
+
+  /* Toolbar colapsada: solo barra inferior con botón expandir */
+  .main-toolbar.collapsed {
+    height: 48px !important;
+    min-height: 48px;
+    padding: 0;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+    align-items: center;
+    justify-content: center;
+  }
+
+  .main-toolbar.collapsed .main-toolbar-content {
+    display: none;
+  }
+
+  .main-toolbar.collapsed .toolbar-collapse-btn {
+    border-left: none;
+    width: 100%;
+    border-radius: 0;
+  }
+
+  .section-modes {
+    flex: 0 0 60px;
+  }
+
+  .mode-btn {
+    min-width: 44px;
+    min-height: 44px;
+    width: 44px;
+    height: 44px;
+  }
+
+  .tools-grid {
+    grid-auto-columns: minmax(44px, 1fr);
+    gap: 6px;
+  }
+
+  .tool-btn {
+    min-width: 44px;
+    min-height: 44px;
+    height: 44px;
+  }
+
+  .secondary-menu {
+    width: min(280px, calc(100vw - 32px));
+    max-width: 100%;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    transform: translateX(calc(-100% - 16px));
+    border-radius: 0 12px 12px 0;
+    box-shadow: 4px 0 20px rgba(0,0,0,0.5);
+  }
+
+  .secondary-menu:not(.collapsed) {
+    transform: translateX(0);
+  }
+
+  .secondary-menu.collapsed {
+    transform: translateX(calc(-100% - 16px));
+  }
+
+  .floating-toggle {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    min-height: 48px;
+    font-size: 1.2rem;
+  }
+
+  .menu-input[type="range"] {
+    min-height: 44px;
+  }
+
+  .menu-input[type="range"]::-webkit-slider-thumb {
+    height: 22px;
+    width: 22px;
+  }
+
+  .icon-btn {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 10px;
+  }
 }
 

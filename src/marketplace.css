@@ -1,34 +1,9 @@
 /* Marketplace – página dedicada con búsqueda y filtros */
 
-.marketplace-page {
-  min-height: 100vh;
-  background: var(--home-bg);
-  color: var(--home-text);
-}
-
 .marketplace-main {
   max-width: 1280px;
   margin: 0 auto;
   padding: 0 1.5rem 3rem;
-}
-
-.marketplace-hero {
-  padding: 2rem 0 1.5rem;
-  text-align: center;
-}
-
-.marketplace-hero h1 {
-  font-size: clamp(1.75rem, 4vw, 2.25rem);
-  font-weight: 800;
-  margin-bottom: 0.5rem;
-  color: var(--home-text);
-}
-
-.marketplace-hero p {
-  color: var(--home-muted);
-  font-size: 1rem;
-  max-width: 560px;
-  margin: 0 auto;
 }
 
 /* Layout: filtros + grid */

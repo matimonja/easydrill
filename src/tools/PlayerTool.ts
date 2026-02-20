@@ -1,3 +1,4 @@
+import { PointerLikeEvent } from './Tool';
 import { BaseTool } from './BaseTool';
 import { Player } from '../entities/Player';
 import { AddEntityCommand } from '../core/Commands';
@@ -19,7 +20,7 @@ export class PlayerTool extends BaseTool {
     public getColor() { return this.color; }
     public getQuantity() { return this.quantity; }
 
-    onMouseDown(e: MouseEvent): void {
+    onMouseDown(e: PointerLikeEvent): void {
         const worldPos = this.getWorldPoint(e);
         
         for (let i = 0; i < this.quantity; i++) {
@@ -35,7 +36,7 @@ export class PlayerTool extends BaseTool {
         // Removed selection to keep focus on creation tool
     }
 
-    onMouseMove(e: MouseEvent): void {}
-    onMouseUp(e: MouseEvent): void {}
+    onMouseMove(e: PointerLikeEvent): void {}
+    onMouseUp(e: PointerLikeEvent): void {}
 }
 

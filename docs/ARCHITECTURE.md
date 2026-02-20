@@ -37,19 +37,45 @@ Manages the view transformation (Translation, Scale/Zoom, Rotation).
 - Converts between **Screen Coordinates** (Mouse events) and **World Coordinates** (Canvas drawing).
 - Supports Panning, Zooming, and 90-degree Rotation.
 
+### 6. Animation System (`src/core/AnimationManager.ts`)
+Manages the playback of tactical sequences. It does NOT update the entities directly but maintains a separate simulation state:
+- **Interpolation**: Calculates intermediate positions for Players and Balls based on the active Action and `dt`.
+- **State Management**: Tracks `PlayerAnimState` (current action, queue, waiting for ball) and `BallState` (held, moving, loose).
+- **Memento Pattern**: Stores the initial state of all entities to allow resetting (`stop()`) after playback.
+
+### 7. Action System (`src/entities/Action.ts`)
+Actions define the *behavior* and *path* of players during animation.
+- **`BaseAction`**: Abstract base class. Defines properties like `speed`, `pathType` (straight/freehand), and physics flags.
+- **`ActionType`**: 'run', 'dribble', 'pass', 'shoot', 'tackle', 'turn'.
+- **Physics**:
+    - `movesPlayer`: If true, the player follows the path.
+    - `ballInteraction`: 'none', 'carry' (ball follows player), 'propel' (ball moves independently).
+
 ## Directory Structure
 ```
 src/
 ├── config/         # Default configurations (colors, shapes)
 ├── core/           # Core engine logic
 │   ├── Game.ts     # Main controller
+│   ├── AnimationManager.ts # Animation logic
 │   ├── Camera.ts   # View transform logic
 │   ├── Commands.ts # Command definitions
-│   ├── Interfaces.ts # Decoupling interfaces (IGameContext)
+│   ├── Interfaces.ts # Decoupling interfaces
 │   └── ...
-├── entities/       # Game objects (Player, Field, Shapes)
+├── entities/       # Game objects
+│   ├── Player.ts
+│   ├── Action.ts   # Action definitions
+│   ├── ExerciseObjects.ts # Cones, Balls, Groups
+│   ├── Field.ts
+│   └── Shape.ts
 ├── tools/          # Interaction logic (State Pattern)
-└── main.ts         # Entry point
+│   ├── ActionTool.ts # Creating actions
+│   ├── ExerciseTool.ts # Placing cones/bails
+│   └── ...
+├── main.ts         # Entry point for the Board Engine
+├── marketplace.ts  # Entry point for Marketplace page
+├── home.ts         # Entry point for Home page
+└── ...             # Other platform entry points
 ```
 
 ## Future Refactoring Opportunities

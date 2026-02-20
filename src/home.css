@@ -462,6 +462,103 @@
   color: var(--marker-violet);
 }
 
+.home-section-cta {
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.home-cta-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--home-card);
+  color: var(--marker-blue);
+  border: 2px solid var(--marker-blue);
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-decoration: none;
+  transition: background 0.2s, color 0.2s, transform 0.15s;
+}
+
+.home-cta-secondary:hover {
+  background: var(--marker-soft-blue);
+  color: var(--marker-blue);
+  text-decoration: none;
+  transform: translateY(-2px);
+}
+
+/* Bolsa de trabajo (home) */
+.home-bolsa {
+  background: var(--home-surface);
+  border-top: 2px solid var(--home-border);
+}
+
+/* Comunidad (home) */
+.home-comunidad {
+  background: var(--home-surface);
+  border-top: 2px solid var(--home-border);
+}
+
+/* Aprendizaje (home) */
+.home-aprendizaje .home-section-title {
+  margin-bottom: 0.5rem;
+}
+
+.home-learning-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.25rem;
+  max-width: 900px;
+  margin: 0 auto 1.5rem;
+}
+
+.home-learning-card {
+  background: var(--home-card);
+  border: 2px solid var(--home-border);
+  border-radius: 14px;
+  padding: 1.5rem;
+  text-decoration: none;
+  color: var(--home-text);
+  transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+  text-align: left;
+}
+
+.home-learning-card:hover {
+  border-color: var(--marker-orange);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(234, 88, 12, 0.15);
+  text-decoration: none;
+  color: var(--home-text);
+}
+
+.home-learning-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--marker-soft-orange);
+  color: var(--marker-orange);
+  font-size: 1.35rem;
+  margin-bottom: 1rem;
+}
+
+.home-learning-card h3 {
+  font-size: 1.1rem;
+  margin: 0 0 0.4rem;
+  color: var(--home-text);
+}
+
+.home-learning-card p {
+  font-size: 0.9rem;
+  color: var(--home-muted);
+  margin: 0;
+  line-height: 1.45;
+}
+
 /* Footer CTA */
 .home-footer-cta {
   text-align: center;
@@ -471,4 +568,62 @@
 .home-footer-cta .home-cta-primary {
   font-size: 1.05rem;
   padding: 1rem 2rem;
+}
+
+/* --- Páginas internas: misma estética que la home --- */
+.marketplace-page,
+.bolsa-page,
+.aprendizaje-page,
+.comunidad-page,
+.perfil-page {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  min-height: 100vh;
+  background: var(--home-bg);
+  color: var(--home-text);
+}
+
+.marketplace-page a,
+.bolsa-page a,
+.aprendizaje-page a,
+.comunidad-page a,
+.perfil-page a {
+  color: var(--marker-blue);
+  text-decoration: none;
+}
+
+.marketplace-page a:hover,
+.bolsa-page a:hover,
+.aprendizaje-page a:hover,
+.comunidad-page a:hover,
+.perfil-page a:hover {
+  text-decoration: none;
+}
+
+/* Hero de página interna (título + descripción) */
+.page-hero {
+  padding: 3rem 2rem 2rem;
+  max-width: 720px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.page-hero h1 {
+  font-size: clamp(1.6rem, 4vw, 2rem);
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.02em;
+  color: var(--home-text);
+}
+
+.page-hero p {
+  font-size: 1.05rem;
+  color: var(--home-muted);
+  line-height: 1.5;
+  margin: 0 auto;
+  max-width: 560px;
+}
+
+.page-hero .home-cta-primary,
+.page-hero .home-cta-secondary {
+  margin-top: 1rem;
 }

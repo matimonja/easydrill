@@ -21,6 +21,11 @@ El proyecto sigue una arquitectura modular estricta para evitar "God Objects" y 
 *   **Interfaces:** Las herramientas y comandos no deben depender de la clase concreta `Game`. Deben depender de `IGameContext` (`src/core/Interfaces.ts`).
 *   **Dependencias Circulares:** Evita importar `Game.ts` dentro de archivos en `entities/` o `tools/`. Usa `Interfaces.ts`.
 
+### 1.4 Animación y Acciones
+*   **Filosofía:** Las `Action` definen la *intención* y el *camino*, pero no ejecutan lógica de movimiento por sí mismas.
+*   **AnimationManager:** Es el único responsable de interpolar posiciones y cambiar estados durante `play()`.
+*   **Separación:** Las entidades (`Player`, `Ball`) tienen propiedades de estado (`x`, `y`), pero durante la animación, estos valores son controlados externamente por el Manager, no por la entidad.
+
 ## 2. Estándares de Código
 
 ### 2.1 TypeScript
@@ -36,14 +41,18 @@ El proyecto sigue una arquitectura modular estricta para evitar "God Objects" y 
 
 ## 3. Flujo de Trabajo para Nuevas Funcionalidades
 
-1.  **Definir la Intención:** ¿Es una nueva interacción (Tool) o un nuevo objeto (Entity)?
+1.  **Definir la Intención:** ¿Es una nueva interacción (Tool), un nuevo objeto (Entity) o una nueva Acción Táctica?
 2.  **Crear Archivos:**
     *   Nueva Entidad -> `src/entities/MyNewEntity.ts`
     *   Nueva Herramienta -> `src/tools/MyNewTool.ts`
+    *   Nueva Acción -> `src/entities/Action.ts` (Extender `BaseAction`)
     *   Nuevo Comando (si aplica) -> `src/core/Commands.ts`
 3.  **Integrar:**
     *   Registrar la herramienta en `Game.ts`.
     *   Agregar botón en la UI (`Game.setupUI` o `Game.updatePropertiesPanel`).
+4.  **Si es una nueva Acción:**
+    *   Definir sus físicas en el constructor (`movesPlayer`, `ballInteraction`).
+    *   Asegurar que `AnimationManager` sepa cómo manejar casos especiales si los tiene (ej: `ballInteraction === 'propel'`).
 
 ## 4. Mantenimiento
 *   **Comentarios:** Usar JSDoc (`/** ... */`) para documentar el "por qué" de las clases y métodos complejos.

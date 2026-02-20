@@ -10,6 +10,13 @@
   </head>
   <body>
     <div id="app">
+      <!-- Overlay en portrait (móvil): pedir rotar a horizontal -->
+      <div id="rotate-overlay" class="rotate-overlay" aria-hidden="true">
+        <div class="rotate-overlay-content">
+          <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+          <p>Para crear el ejercicio, rote el dispositivo en horizontal</p>
+        </div>
+      </div>
       <a href="index.html" class="editor-back-home" title="Volver al inicio"><i class="fa-solid fa-arrow-left"></i> Inicio</a>
       <div id="game-container">
         <div id="secondary-menu" class="secondary-menu collapsed">
@@ -26,6 +33,7 @@
       </div>
 
       <div id="main-toolbar" class="main-toolbar">
+        <div class="main-toolbar-content">
         <div class="toolbar-section section-modes">
             <button id="btn-mode-edit" class="mode-btn active" title="Modo Edición"><i class="fa-solid fa-pen-ruler"></i></button>
             <button id="btn-mode-play" class="mode-btn" title="Modo Reproducción"><i class="fa-solid fa-play"></i></button>
@@ -57,6 +65,8 @@
                 <span class="placeholder-text-small">Seleccione una herramienta...</span>
             </div>
         </div>
+        </div>
+        <button type="button" id="toolbar-collapse-btn" class="toolbar-collapse-btn" aria-label="Colapsar menú" title="Colapsar menú"><i class="fa-solid fa-chevron-down"></i><i class="fa-solid fa-chevron-up"></i></button>
       </div>
     </div>
     <script type="module" src="/src/main.ts"></script>

@@ -1,3 +1,4 @@
+import { PointerLikeEvent } from './Tool';
 import { BaseTool } from './BaseTool';
 import { Entity } from '../core/Interfaces'; 
 import { BaseShape } from '../entities/Shape';
@@ -15,7 +16,7 @@ export class SelectTool extends BaseTool {
     private activeHandleId: string | null = null;
     private initialResizeState: EntityState | null = null;
 
-    onMouseDown(e: MouseEvent): void {
+    onMouseDown(e: PointerLikeEvent): void {
         const worldPos = this.getWorldPoint(e);
         const selectedEntity = this.game.getSelectedEntity();
 
@@ -101,7 +102,7 @@ export class SelectTool extends BaseTool {
         }
     }
 
-    onMouseMove(e: MouseEvent): void {
+    onMouseMove(e: PointerLikeEvent): void {
         const worldPos = this.getWorldPoint(e);
         const selectedEntity = this.game.getSelectedEntity();
 
@@ -134,7 +135,7 @@ export class SelectTool extends BaseTool {
         }
     }
 
-    onMouseUp(e: MouseEvent): void {
+    onMouseUp(e: PointerLikeEvent): void {
         const selectedEntity = this.game.getSelectedEntity();
 
         if (this.isResizing && selectedEntity && this.initialResizeState) {

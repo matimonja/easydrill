@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tu perfil – EasyDrill</title>
+    <link rel="stylesheet" href="/src/home.css" />
+    <link rel="stylesheet" href="/src/perfil.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  </head>
+  <body class="perfil-page">
+    <header class="home-header">
+      <a href="index.html" class="home-logo">EasyDrill</a>
+      <nav class="home-nav">
+        <a href="perfil.html">Tu perfil</a>
+        <a href="marketplace.html">Marketplace</a>
+        <a href="index.html#comunidad">Comunidad</a>
+        <a href="aprendizaje.html">Aprendizaje</a>
+        <a href="editor.html">Abrir pizarrón</a>
+        <a href="bolsa-de-trabajo.html">Bolsa de trabajo</a>
+        <a href="#login" class="home-nav-login">Iniciar sesión</a>
+      </nav>
+    </header>
+
+    <main class="perfil-main">
+      <section class="perfil-header page-hero">
+        <div class="perfil-avatar-wrap">
+          <div class="perfil-avatar" id="perfil-avatar" aria-hidden="true">
+            <i class="fa-solid fa-user"></i>
+          </div>
+          <button type="button" class="perfil-avatar-edit" title="Cambiar foto" aria-label="Cambiar foto"><i class="fa-solid fa-camera"></i></button>
+        </div>
+        <h1 class="perfil-name" id="perfil-name">Tu nombre</h1>
+        <p class="perfil-role" id="perfil-role">Entrenador</p>
+        <a href="#login" class="home-cta-secondary perfil-edit-link"><i class="fa-solid fa-pen"></i> Editar perfil</a>
+      </section>
+
+      <section class="perfil-section perfil-presentacion">
+        <h2 class="perfil-section-title"><i class="fa-solid fa-align-left"></i> Presentación</h2>
+        <div class="perfil-bio-wrap">
+          <p class="perfil-bio" id="perfil-bio">Contá quién sos, qué categorías dirigís o en qué te enfocás. Esta descripción se verá en tu perfil público y en el marketplace.</p>
+        </div>
+        <a href="#login" class="perfil-inline-edit">Editar presentación</a>
+      </section>
+
+      <section class="perfil-section perfil-dashboard">
+        <h2 class="perfil-section-title"><i class="fa-solid fa-chart-simple"></i> Tu actividad</h2>
+        <div class="perfil-stats-grid">
+          <a href="#login" class="perfil-stat-card perfil-stat-cuaderno">
+            <span class="perfil-stat-icon"><i class="fa-solid fa-book-bookmark"></i></span>
+            <span class="perfil-stat-value" id="stat-ejercicios">0</span>
+            <span class="perfil-stat-label">ejercicios en tu cuaderno</span>
+            <span class="perfil-stat-link">Ver cuaderno <i class="fa-solid fa-arrow-right"></i></span>
+          </a>
+          <div class="perfil-stat-card">
+            <span class="perfil-stat-icon"><i class="fa-solid fa-comments"></i></span>
+            <span class="perfil-stat-value" id="stat-foros">0</span>
+            <span class="perfil-stat-label">participaciones en el foro</span>
+          </div>
+          <div class="perfil-stat-card">
+            <span class="perfil-stat-icon"><i class="fa-solid fa-code-branch"></i></span>
+            <span class="perfil-stat-value" id="stat-forks">0</span>
+            <span class="perfil-stat-label">veces que hicieron fork de tus ejercicios</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="perfil-section">
+        <h2 class="perfil-section-title"><i class="fa-solid fa-calendar-days"></i> Planificaciones</h2>
+        <p class="perfil-section-desc">Organizá tus sesiones y jornadas por fecha o categoría.</p>
+        <a href="#login" class="perfil-block-link">
+          <i class="fa-solid fa-list"></i> Ver mis planificaciones
+        </a>
+      </section>
+
+      <section class="perfil-section perfil-extras">
+        <h2 class="perfil-section-title"><i class="fa-solid fa-star"></i> Más en tu perfil</h2>
+        <ul class="perfil-extras-list">
+          <li>
+            <a href="#login" class="perfil-extra-item">
+              <i class="fa-solid fa-trophy"></i>
+              <span>Insignias y logros</span>
+              <small>Nivel y recompensas por tu actividad</small>
+            </a>
+          </li>
+          <li>
+            <a href="#login" class="perfil-extra-item">
+              <i class="fa-solid fa-heart"></i>
+              <span>Ejercicios guardados</span>
+              <small>Del marketplace que marcaste como favoritos</small>
+            </a>
+          </li>
+          <li>
+            <a href="#login" class="perfil-extra-item">
+              <i class="fa-solid fa-clock-rotate-left"></i>
+              <span>Actividad reciente</span>
+              <small>Últimos ejercicios editados o compartidos</small>
+            </a>
+          </li>
+        </ul>
+      </section>
+    </main>
+
+    <script type="module" src="/src/perfil.ts"></script>
+  </body>
+</html>

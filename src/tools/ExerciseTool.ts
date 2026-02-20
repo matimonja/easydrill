@@ -1,3 +1,4 @@
+import { PointerLikeEvent } from './Tool';
 import { BaseTool } from './BaseTool';
 import { AddEntityCommand } from '../core/Commands';
 import { Cone, Ball, ConeGroup, ExerciseObjectType, ConeGroupShape } from '../entities/ExerciseObjects';
@@ -23,7 +24,7 @@ export class ExerciseTool extends BaseTool {
     public getObjectType() { return this.objectType; }
     public getConeShape() { return this.coneShape; }
 
-    onMouseDown(e: MouseEvent) {
+    onMouseDown(e: PointerLikeEvent) {
         const pos = this.getWorldPoint(e);
         this.dragStart = { x: pos.x, y: pos.y };
         
@@ -65,7 +66,7 @@ export class ExerciseTool extends BaseTool {
         }
     }
     
-    onMouseMove(e: MouseEvent) {
+    onMouseMove(e: PointerLikeEvent) {
         if (!this.isDragging || !this.tempEntity) return;
         
         const pos = this.getWorldPoint(e);
@@ -109,7 +110,7 @@ export class ExerciseTool extends BaseTool {
         }
     }
     
-    onMouseUp(e: MouseEvent) {
+    onMouseUp(e: PointerLikeEvent) {
         if (this.isDragging && this.tempEntity) {
              let w = 0, h = 0;
              let isValid = false;

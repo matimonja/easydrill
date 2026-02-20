@@ -1,0 +1,277 @@
+/* Bolsa de trabajo – página con búsqueda y listado de ofertas */
+
+.bolsa-main {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1.5rem 3rem;
+}
+
+.bolsa-layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .bolsa-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.bolsa-filters {
+  background: var(--home-surface);
+  border: 2px solid var(--home-border);
+  border-radius: 14px;
+  padding: 1.25rem;
+  position: sticky;
+  top: 1rem;
+}
+
+.bolsa-filters h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--home-text);
+}
+
+.filter-group {
+  margin-bottom: 1rem;
+}
+
+.filter-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--home-muted);
+  margin-bottom: 0.4rem;
+}
+
+.search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--home-card);
+  border: 2px solid var(--home-border);
+  border-radius: 10px;
+}
+
+.search-wrap:focus-within {
+  border-color: var(--marker-blue);
+  outline: none;
+}
+
+.search-wrap i {
+  color: var(--home-muted);
+  font-size: 0.9rem;
+}
+
+.search-input {
+  flex: 1;
+  border: none;
+  background: none;
+  font-size: 0.95rem;
+  color: var(--home-text);
+}
+
+.search-input::placeholder {
+  color: var(--home-muted);
+}
+
+.search-input:focus {
+  outline: none;
+}
+
+.filter-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.filter-tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 0.35rem 0.6rem;
+  border-radius: 8px;
+  border: 2px solid var(--home-border);
+  background: var(--home-card);
+  color: var(--home-muted);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, color 0.2s;
+}
+
+.filter-tag:hover {
+  border-color: var(--marker-blue);
+  color: var(--marker-blue);
+  background: var(--marker-soft-blue);
+}
+
+.filter-tag.active {
+  border-color: var(--marker-blue);
+  background: var(--marker-soft-blue);
+  color: var(--marker-blue);
+}
+
+.filter-reset {
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--home-muted);
+  background: transparent;
+  border: 2px solid var(--home-border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.filter-reset:hover {
+  border-color: var(--marker-blue);
+  color: var(--marker-blue);
+}
+
+.sort-select {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.9rem;
+  border: 2px solid var(--home-border);
+  border-radius: 8px;
+  background: var(--home-card);
+  color: var(--home-text);
+  cursor: pointer;
+}
+
+.bolsa-content {
+  min-height: 200px;
+}
+
+.bolsa-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.bolsa-count {
+  font-size: 0.9rem;
+  color: var(--home-muted);
+}
+
+.bolsa-sort {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bolsa-sort label {
+  font-size: 0.85rem;
+  color: var(--home-muted);
+}
+
+.bolsa-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.25rem;
+}
+
+.bolsa-card {
+  background: var(--home-card);
+  border-radius: 14px;
+  border: 2px solid var(--home-border);
+  padding: 1.25rem;
+  transition: border-color 0.2s, transform 0.15s;
+}
+
+.bolsa-card:hover {
+  border-color: var(--marker-blue);
+  transform: translateY(-2px);
+}
+
+.bolsa-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.bolsa-card-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--home-text);
+}
+
+.bolsa-card-type {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.bolsa-card-type.tag-entrenador { color: var(--marker-blue); background: var(--marker-soft-blue); }
+.bolsa-card-type.tag-coordinador { color: var(--marker-violet); background: var(--marker-soft-violet); }
+.bolsa-card-type.tag-preparador { color: var(--marker-green); background: var(--marker-soft-green); }
+.bolsa-card-type.tag-otro { color: var(--home-muted); background: var(--home-border); }
+
+.bolsa-card-meta {
+  font-size: 0.85rem;
+  color: var(--home-muted);
+  margin-bottom: 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.bolsa-card-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.bolsa-card-desc {
+  font-size: 0.9rem;
+  color: var(--home-muted);
+  line-height: 1.4;
+  margin: 0 0 1rem;
+}
+
+.bolsa-card-actions a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.bolsa-empty {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: var(--home-muted);
+}
+
+.bolsa-empty i {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.bolsa-empty p {
+  margin-bottom: 1rem;
+}
+
+.bolsa-empty .filter-reset {
+  width: auto;
+  display: inline-block;
+  padding: 0.5rem 1rem;
+}

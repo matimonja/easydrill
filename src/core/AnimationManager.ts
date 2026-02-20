@@ -3,30 +3,42 @@ import { Player } from '../entities/Player';
 import { Ball } from '../entities/ExerciseObjects';
 import { DEFAULT_BALL_COLOR } from '../config/defaults';
 import { ANIMATION_CONFIG } from '../config/animation';
-import { BaseAction, RunAction, DribbleAction, PassAction, ShootAction, TurnAction, TackleAction } from '../entities/Action';
+import { BaseAction } from '../entities/Action';
 
 // Estado de la Bocha en la animación
 interface BallState {
-    id: string;                 
-    status: 'held' | 'moving' | 'loose'; 
-    ownerId: string | null;     
+    id: string;
+    status: 'held' | 'moving' | 'loose';
+    ownerId: string | null;
     lastOwnerId?: string | null;
     x: number;
     y: number;
     color: string;
 }
 
+// Acción propel (pase/tiro) que sigue animando la bocha en paralelo
+interface PropelInProgress {
+    action: BaseAction;
+    timeElapsed: number;
+    duration: number;
+    ballId: string; // Bocha asociada a este pase/tiro (puede haber varias en vuelo)
+}
+
 // Estado de cada Jugador en la animación
 interface PlayerAnimState {
     currentAction: BaseAction | null;
     actionQueue: BaseAction[];
-    timeInAction: number;       
-    duration: number;           
+    timeInAction: number;
+    duration: number;
     isWaitingForBall: boolean;
     // Delay logic
     isWaitingDelay: boolean;
     delayTimer: number;
-    hasBall: boolean;           
+    hasBall: boolean;
+    // Pases/tiros en curso: bochas viajando mientras el jugador puede hacer otra acción
+    propelsInProgress: PropelInProgress[];
+    /** Tiempo restante (seg) antes de poder iniciar la siguiente acción tras una con bocha */
+    ballActionCooldownRemaining: number;
 }
 
 interface AnimationMemento {
@@ -43,23 +55,25 @@ interface BallEntityMemento {
 
 /**
  * Gestiona la reproducción de la animación de una escena.
- * Controla el estado de jugadores y bochas, interpolación de movimientos y reglas de posesión.
+ * Único responsable de interpolar posiciones y cambiar estados durante play().
+ * Usa Memento Pattern para restaurar el estado al detener.
+ * @see ARCHITECTURE.md
  */
 export class AnimationManager {
     public isPlaying: boolean = false;
     public isPaused: boolean = false;
     public speedMultiplier: number = 1.0;
-    
+
     // Entidades y Estados
     private entities: Entity[] = [];
     private playerStates: Map<string, PlayerAnimState> = new Map();
     private balls: BallState[] = [];
-    
+
     // Para resetear (Memento Pattern)
     private initialMemento: Map<string, AnimationMemento> = new Map();
     private ballEntityMementos: BallEntityMemento[] = [];
 
-    constructor() {}
+    constructor() { }
 
     /**
      * Inicia la reproducción de la escena indicada.
@@ -70,7 +84,7 @@ export class AnimationManager {
         this.entities = entities;
         this.isPlaying = true;
         this.isPaused = false;
-        
+
         this.resetState();
         this.initializeState(sceneIndex);
     }
@@ -80,7 +94,7 @@ export class AnimationManager {
      */
     public stop() {
         if (!this.isPlaying) return;
-        
+
         this.isPlaying = false;
         this.isPaused = false;
 
@@ -131,7 +145,7 @@ export class AnimationManager {
             if (ball.status !== 'held') {
                 ctx.beginPath();
                 ctx.arc(ball.x, ball.y, ANIMATION_CONFIG.BALL_RADIUS, 0, Math.PI * 2);
-                ctx.fillStyle = ball.color; 
+                ctx.fillStyle = ball.color;
                 ctx.fill();
                 ctx.strokeStyle = ANIMATION_CONFIG.BALL_STROKE_COLOR;
                 ctx.lineWidth = 1;
@@ -190,7 +204,9 @@ export class AnimationManager {
             isWaitingForBall: false,
             isWaitingDelay: false,
             delayTimer: 0,
-            hasBall: player.hasBall
+            hasBall: player.hasBall,
+            propelsInProgress: [],
+            ballActionCooldownRemaining: 0
         });
 
         // Si tiene bocha, crearla en el sistema
@@ -247,31 +263,47 @@ export class AnimationManager {
         });
     }
 
+    /**
+     * Actualiza el estado de un jugador durante la reproducción.
+     * Orden: (1) animar propels en vuelo, (2) cooldown, (3) delay pre-acción,
+     * (4) pickup de bocha, (5) ejecutar o iniciar siguiente acción.
+     */
     private updatePlayer(player: Player, dt: number) {
         const state = this.playerStates.get(player.id);
         if (!state) return;
 
-        // 0. Handle Pre-Action Delay (Optimization)
+        // 1. Animar bochas de pases/tiros en vuelo (siempre, incluso durante delay)
+        this.updatePropelsInProgress(player, state, dt);
+
+        // 2. Decrementar cooldown tras acción con bocha
+        if (state.ballActionCooldownRemaining > 0) {
+            state.ballActionCooldownRemaining = Math.max(0, state.ballActionCooldownRemaining - dt);
+        }
+
+        // 3. Pre-Action Delay (waitBefore de la siguiente acción)
         if (state.isWaitingDelay) {
             state.delayTimer -= dt;
             if (state.delayTimer <= 0) {
                 state.isWaitingDelay = false;
-                // Start the action now
                 this.startAction(player, state);
             }
-            return; // Don't do anything else while waiting
+            return;
         }
 
-        // A. Intentar agarrar bocha
+        // 4. Intentar agarrar bocha si no tiene
         if (!state.hasBall) {
             this.tryPickupBall(player, state);
         }
 
-        // B. Ejecutar Acción
-        if (state.currentAction) {
-            this.processCurrentAction(player, state, dt);
-        } else {
-            this.processNextAction(player, state);
+        // 5. Ejecutar acción actual o intentar iniciar la siguiente
+        while (true) {
+            if (state.currentAction) {
+                this.processCurrentAction(player, state, dt);
+                break;
+            }
+            if (!state.hasBall) this.tryPickupBall(player, state);
+            const started = this.tryStartNextAction(player, state);
+            if (!started) break;
         }
     }
 
@@ -314,7 +346,7 @@ export class AnimationManager {
         player.hasBall = true;
         player.ballColor = ball.color;
         state.isWaitingForBall = false;
-        
+
         if (updateBallStatus) {
             ball.status = 'held';
             ball.ownerId = player.id;
@@ -322,39 +354,73 @@ export class AnimationManager {
         }
     }
 
+    private updatePropelsInProgress(player: Player, state: PlayerAnimState, dt: number) {
+        const props = state.propelsInProgress;
+        for (let i = props.length - 1; i >= 0; i--) {
+            const prop = props[i];
+            prop.timeElapsed += dt;
+            const progress = Math.min(1, prop.timeElapsed / prop.duration);
+
+            const myBall = this.balls.find(b => b.id === prop.ballId);
+            if (myBall) {
+                const ballPos = prop.action.getPositionAt(progress);
+                myBall.x = ballPos.x;
+                myBall.y = ballPos.y;
+            }
+
+            if (prop.timeElapsed >= prop.duration) {
+                if (myBall) {
+                    myBall.status = 'loose';
+                    const finalPos = prop.action.getPositionAt(1.0);
+                    myBall.x = finalPos.x;
+                    myBall.y = finalPos.y;
+                }
+                props.splice(i, 1);
+            }
+        }
+    }
+
     private processCurrentAction(player: Player, state: PlayerAnimState, dt: number) {
+        const action = state.currentAction!;
+        // Los propel nunca son currentAction: van directo a propelsInProgress al iniciar
+        if (action.ballInteraction === 'propel') return;
+
         state.timeInAction += dt;
         const progress = Math.min(1, state.timeInAction / state.duration);
-
-        this.applyActionPhysics(player, state.currentAction!, progress);
+        this.applyActionPhysics(player, action, progress);
 
         if (state.timeInAction >= state.duration) {
             this.finishAction(player, state);
         }
     }
 
-    private processNextAction(player: Player, state: PlayerAnimState) {
+    /**
+     * Intenta iniciar la siguiente acción de la cola.
+     * Respeta cooldown tras acciones con bocha, waitBefore y disponibilidad de bocha.
+     * @returns true si inició una acción (propel libera currentAction para intentar la siguiente)
+     */
+    private tryStartNextAction(player: Player, state: PlayerAnimState): boolean {
         const nextAction = state.actionQueue[0];
-        
-        if (nextAction) {
-            // Check optimization delay first
-            if (nextAction.waitBefore > 0 && !state.isWaitingDelay) {
-                // Remove from queue but enter wait state
-                state.actionQueue.shift();
-                state.currentAction = nextAction; // Hold it as current but waiting
-                state.isWaitingDelay = true;
-                state.delayTimer = nextAction.waitBefore;
-                return;
-            }
+        if (!nextAction) return false;
+        if (state.ballActionCooldownRemaining > 0) return false;
 
-            if (this.canStartAction(nextAction, state.hasBall)) {
-                state.actionQueue.shift();
-                state.currentAction = nextAction;
-                this.startAction(player, state);
-            } else {
-                state.isWaitingForBall = true;
-            }
+        const waitBefore = nextAction.waitBefore ?? 0;
+        if (waitBefore > ANIMATION_CONFIG.WAIT_BEFORE_EPSILON && !state.isWaitingDelay) {
+            state.actionQueue.shift();
+            state.currentAction = nextAction;
+            state.isWaitingDelay = true;
+            state.delayTimer = waitBefore;
+            return false; // Esperando delay, no seguir
         }
+
+        if (this.canStartAction(nextAction, state.hasBall)) {
+            state.actionQueue.shift();
+            state.currentAction = nextAction;
+            this.startAction(player, state);
+            return true; // Puede haber liberado currentAction si fue propel
+        }
+        state.isWaitingForBall = true;
+        return false;
     }
 
     private startAction(player: Player, state: PlayerAnimState) {
@@ -363,22 +429,37 @@ export class AnimationManager {
         state.duration = this.calculateDuration(action);
         state.isWaitingForBall = false;
 
-        // Si la acción propulsa la bola (Pase/Tiro), soltarla
+        // Si es pase/tiro: soltar bocha y pasarla a "en vuelo"
         if (action.ballInteraction === 'propel') {
-            this.releaseBall(player, state);
+            state.ballActionCooldownRemaining = ANIMATION_CONFIG.MIN_DELAY_AFTER_BALL_ACTION;
+            const ballId = this.releaseBall(player, state);
+            if (ballId) {
+                state.propelsInProgress.push({
+                    action,
+                    timeElapsed: 0,
+                    duration: state.duration,
+                    ballId
+                });
+            }
+            state.currentAction = null; // Liberar para intentar la siguiente
         }
     }
 
-    private releaseBall(player: Player, state: PlayerAnimState) {
+    private releaseBall(player: Player, state: PlayerAnimState): string | null {
         const myBall = this.balls.find(b => b.ownerId === player.id);
         if (myBall) {
             myBall.status = 'moving';
             myBall.ownerId = null;
             myBall.lastOwnerId = player.id;
+            state.hasBall = false;
+            player.hasBall = false;
+            player.ballColor = undefined;
+            return myBall.id;
         }
         state.hasBall = false;
         player.hasBall = false;
-        player.ballColor = undefined; 
+        player.ballColor = undefined;
+        return null;
     }
 
     private canStartAction(action: BaseAction, hasBall: boolean): boolean {
@@ -393,16 +474,16 @@ export class AnimationManager {
         // Movimiento del Jugador
         if (action.movesPlayer) {
             const pos = action.getPositionAt(t);
-            
+
             // Calcular Rotación (Heading)
             const targetRotation = action.getHeadingAt(t);
             // Interpolación suave (Lerp) para evitar giros bruscos en Freehand
             // Factor 0.2 ajustado para suavidad visual
-            player.rotation = this.lerpAngle(player.rotation, targetRotation, 0.2);
+            player.rotation = this.lerpAngle(player.rotation, targetRotation, ANIMATION_CONFIG.ROTATION_LERP_FACTOR);
 
             player.x = pos.x;
             player.y = pos.y;
-            
+
             // Si conduce (carry), la bocha va con él respetando la rotación
             if (action.ballInteraction === 'carry') {
                 const myBall = this.balls.find(b => b.ownerId === player.id);
@@ -410,33 +491,15 @@ export class AnimationManager {
                     this.updateBallPositionRelative(myBall, player);
                 }
             }
-        } 
-        
-        // Movimiento Independiente de la Bocha (Pase/Tiro)
-        if (action.ballInteraction === 'propel') {
-            // Buscar la bocha lanzada
-            const myBall = this.balls.find(b => b.status === 'moving' && b.lastOwnerId === player.id);
-            if (myBall) {
-                const ballPos = action.getPositionAt(t);
-                myBall.x = ballPos.x;
-                myBall.y = ballPos.y;
-            }
         }
+
     }
 
     private finishAction(player: Player, state: PlayerAnimState) {
         const action = state.currentAction!;
         state.currentAction = null;
-
-        // Si terminó un pase, la bocha queda suelta en el destino
-        if (action.ballInteraction === 'propel') {
-            const myBall = this.balls.find(b => b.status === 'moving' && b.lastOwnerId === player.id);
-            if (myBall) {
-                myBall.status = 'loose';
-                const finalPos = action.getPositionAt(1.0);
-                myBall.x = finalPos.x;
-                myBall.y = finalPos.y;
-            }
+        if (action.ballInteraction === 'carry') {
+            state.ballActionCooldownRemaining = ANIMATION_CONFIG.MIN_DELAY_AFTER_BALL_ACTION;
         }
     }
 
@@ -452,25 +515,24 @@ export class AnimationManager {
 
     private calculateDuration(action: BaseAction): number {
         let speedVal = ANIMATION_CONFIG.DEFAULT_SPEED_PERCENT;
-        if ((action as any).speed !== undefined && (action as any).speed !== null) {
-            speedVal = (action as any).speed;
+        if (action.speed !== undefined && action.speed !== null) {
+            speedVal = action.speed;
         }
 
-        const pxPerSec = ANIMATION_CONFIG.BASE_SPEED_PX_PER_SEC + 
-                        (speedVal / 100) * ANIMATION_CONFIG.MAX_ADDITIONAL_SPEED_PX_PER_SEC;
+        const pxPerSec = ANIMATION_CONFIG.BASE_SPEED_PX_PER_SEC +
+            (speedVal / 100) * ANIMATION_CONFIG.MAX_ADDITIONAL_SPEED_PX_PER_SEC;
 
         if (action.getPathLength() === 0) return ANIMATION_CONFIG.ZERO_LENGTH_DURATION;
         if (!action.movesPlayer && !action.movesBall && action.ballInteraction === 'none') {
-             // Turn/Tackle (acciones in situ sin movimiento de bocha)
-             return ANIMATION_CONFIG.INSTANT_ACTION_DURATION;
+            // Turn/Tackle (acciones in situ sin movimiento de bocha)
+            return ANIMATION_CONFIG.INSTANT_ACTION_DURATION;
         }
 
         return action.getPathLength() / pxPerSec;
     }
 
     private updateBallPositionRelative(ball: BallState, player: Player) {
-        // Distancia 17px (hipotenusa de 12,12) a +45 grados de la rotación
-        const dist = 17;
+        const dist = ANIMATION_CONFIG.BALL_OFFSET_DISTANCE;
         const angle = player.rotation + (Math.PI / 4);
         ball.x = player.x + Math.cos(angle) * dist;
         ball.y = player.y + Math.sin(angle) * dist;

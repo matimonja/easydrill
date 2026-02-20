@@ -1,0 +1,119 @@
+/* Comunidad – foro para ejercicios, funcionalidades y general */
+
+.comunidad-main {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 1.5rem 3rem;
+}
+
+.comunidad-categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid var(--home-border);
+}
+
+.comunidad-cat-link {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--home-muted);
+  background: var(--home-card);
+  border: 2px solid var(--home-border);
+  text-decoration: none;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+
+.comunidad-cat-link:hover {
+  border-color: var(--marker-blue);
+  color: var(--marker-blue);
+  background: var(--marker-soft-blue);
+  text-decoration: none;
+}
+
+.comunidad-cat-link.active {
+  border-color: var(--marker-blue);
+  color: var(--marker-blue);
+  background: var(--marker-soft-blue);
+}
+
+.comunidad-section {
+  padding: 1.5rem 0;
+  border-top: 2px solid var(--home-border);
+}
+
+.comunidad-section:first-of-type {
+  border-top: none;
+}
+
+.comunidad-section-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0 0 0.35rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--home-text);
+}
+
+.comunidad-section-title i {
+  color: var(--marker-violet);
+}
+
+.comunidad-section-desc {
+  color: var(--home-muted);
+  font-size: 0.9rem;
+  margin: 0 0 1rem;
+}
+
+.comunidad-thread-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.comunidad-thread {
+  display: block;
+  padding: 1rem 1.25rem;
+  margin-bottom: 0.5rem;
+  background: var(--home-card);
+  border: 2px solid var(--home-border);
+  border-radius: 12px;
+  text-decoration: none;
+  color: var(--home-text);
+  transition: border-color 0.2s, transform 0.15s;
+}
+
+.comunidad-thread:hover {
+  border-color: var(--marker-violet);
+  transform: translateX(4px);
+  text-decoration: none;
+  color: var(--home-text);
+}
+
+.comunidad-thread-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem;
+}
+
+.comunidad-thread-meta {
+  font-size: 0.8rem;
+  color: var(--home-muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.comunidad-thread-empty {
+  padding: 1.5rem;
+  text-align: center;
+  color: var(--home-muted);
+  font-size: 0.9rem;
+  background: var(--home-surface);
+  border-radius: 12px;
+  border: 2px dashed var(--home-border);
+}

@@ -1,3 +1,4 @@
+import { PointerLikeEvent } from './Tool';
 import { BaseTool } from './BaseTool';
 
 /**
@@ -23,7 +24,7 @@ export class CameraTool extends BaseTool {
         }
     }
 
-    onMouseDown(e: MouseEvent): void {
+    onMouseDown(e: PointerLikeEvent): void {
         if (this._isPanEnabled) {
             this.isPanning = true;
             this.lastMouseX = e.clientX;
@@ -31,7 +32,7 @@ export class CameraTool extends BaseTool {
         }
     }
 
-    onMouseMove(e: MouseEvent): void {
+    onMouseMove(e: PointerLikeEvent): void {
         if (this.isPanning) {
             const dx = e.clientX - this.lastMouseX;
             const dy = e.clientY - this.lastMouseY;
@@ -41,7 +42,7 @@ export class CameraTool extends BaseTool {
         }
     }
 
-    onMouseUp(e: MouseEvent): void {
+    onMouseUp(e: PointerLikeEvent): void {
         this.isPanning = false;
     }
     
