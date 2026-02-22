@@ -408,8 +408,8 @@ export class Game implements IGameContext {
 
         // Save & Settings buttons
         document.getElementById('btn-save')?.addEventListener('click', () => {
-            // TODO: Implement save logic
-            console.log('[EasyDrill] Guardar – pendiente de implementación');
+            // Navigate to exercise detail page
+            window.location.href = 'ejercicio.html';
         });
         document.getElementById('btn-settings')?.addEventListener('click', () => {
             window.location.href = 'setup.html';

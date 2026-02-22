@@ -13,6 +13,7 @@ export default defineConfig({
         aprendizaje: 'aprendizaje.html',
         comunidad: 'comunidad.html',
         perfil: 'perfil.html',
+        ejercicio: 'ejercicio.html',
       },
     },
   },

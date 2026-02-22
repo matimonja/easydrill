@@ -1,0 +1,696 @@
+/* ============================================================
+   Exercise Detail Page — ejercicio.css
+   Reuses home.css design tokens (marker colors, surfaces)
+   ============================================================ */
+
+:root {
+    --home-bg: #f5f5f0;
+    --home-surface: #fafaf8;
+    --home-card: #fff;
+    --home-border: #e8e8e2;
+    --home-text: #2d2d28;
+    --home-muted: #5c5c56;
+    --marker-blue: #2563eb;
+    --marker-red: #dc2626;
+    --marker-green: #16a34a;
+    --marker-orange: #ea580c;
+    --marker-violet: #7c3aed;
+    --marker-soft-blue: rgba(37, 99, 235, 0.10);
+    --marker-soft-red: rgba(220, 38, 38, 0.10);
+    --marker-soft-green: rgba(22, 163, 74, 0.10);
+    --marker-soft-orange: rgba(234, 88, 12, 0.10);
+    --marker-soft-violet: rgba(124, 58, 237, 0.10);
+}
+
+/* --- Reset & Base --- */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body.detail-page {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    background: var(--home-bg);
+    color: var(--home-text);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    line-height: 1.5;
+    overflow-x: hidden;
+}
+
+/* --- Top Navigation --- */
+.detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem clamp(1rem, 4vw, 2rem);
+    background: var(--home-surface);
+    border-bottom: 2px solid var(--home-border);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+}
+
+.detail-logo {
+    font-weight: 800;
+    font-size: 1.3rem;
+    color: var(--marker-blue);
+    text-decoration: none;
+    letter-spacing: -0.02em;
+}
+
+.detail-nav a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--home-muted);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    padding: 0.4rem 0.75rem;
+    border-radius: 8px;
+    transition: background 0.2s, color 0.2s;
+}
+
+.detail-nav a:hover {
+    background: var(--marker-soft-blue);
+    color: var(--marker-blue);
+}
+
+/* ============================================================
+   MAIN LAYOUT — Desktop: 60/40 split | Mobile: stacked
+   ============================================================ */
+.detail-layout {
+    display: grid;
+    grid-template-columns: 3fr 2fr;
+    min-height: calc(100vh - 52px);
+}
+
+/* --- Left Column: Player --- */
+.player-column {
+    position: sticky;
+    top: 52px;
+    /* height of header */
+    height: calc(100vh - 52px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background: #1a1a1a;
+}
+
+.player-container {
+    width: 100%;
+    max-width: 800px;
+    aspect-ratio: 16 / 9;
+    background: linear-gradient(135deg, #222 0%, #2a2a2a 100%);
+    border-radius: 16px;
+    border: 2px solid #333;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
+}
+
+.player-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.player-play-btn {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 3px solid rgba(255, 255, 255, 0.2);
+    background: rgba(37, 99, 235, 0.15);
+    color: var(--marker-blue);
+    font-size: 1.8rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.player-play-btn:hover {
+    background: var(--marker-blue);
+    color: #fff;
+    border-color: var(--marker-blue);
+    transform: scale(1.08);
+    box-shadow: 0 0 30px rgba(37, 99, 235, 0.4);
+}
+
+.player-play-btn i {
+    margin-left: 4px;
+    /* optical centering for play icon */
+}
+
+.player-label {
+    color: #666;
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+/* --- Right Column: Info Panel --- */
+.info-panel {
+    overflow-y: auto;
+    height: calc(100vh - 52px);
+    padding: 2rem 2rem 3rem;
+    background: var(--home-card);
+    border-left: 2px solid var(--home-border);
+}
+
+.info-panel::-webkit-scrollbar {
+    width: 6px;
+}
+
+.info-panel::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.info-panel::-webkit-scrollbar-thumb {
+    background: var(--home-border);
+    border-radius: 3px;
+}
+
+.info-panel::-webkit-scrollbar-thumb:hover {
+    background: #ccc;
+}
+
+/* --- Sections --- */
+.detail-section {
+    margin-bottom: 1.75rem;
+}
+
+.detail-section:last-child {
+    margin-bottom: 0;
+}
+
+/* hide empty sections via JS */
+.detail-section.hidden {
+    display: none;
+}
+
+/* --- 1. Title Block --- */
+.title-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.title-row h1 {
+    margin: 0;
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--home-text);
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+}
+
+.btn-edit {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1rem;
+    background: var(--marker-soft-blue);
+    color: var(--marker-blue);
+    border: 2px solid var(--marker-blue);
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.btn-edit:hover {
+    background: var(--marker-blue);
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+}
+
+.badge-objective {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.85rem;
+    background: var(--marker-soft-blue);
+    color: var(--marker-blue);
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: 20px;
+    border: 1px solid rgba(37, 99, 235, 0.2);
+}
+
+/* --- 2. Metadata Bar --- */
+.meta-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    background: var(--home-surface);
+    border: 2px solid var(--home-border);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.meta-item {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--home-muted);
+    border-right: 1px solid var(--home-border);
+    min-width: 0;
+}
+
+.meta-item:last-child {
+    border-right: none;
+}
+
+.meta-item i {
+    color: var(--marker-blue);
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+/* --- 3. Description --- */
+.section-heading {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--home-text);
+    margin: 0 0 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.description-text {
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--home-muted);
+    line-height: 1.7;
+}
+
+/* --- 4. Materials Chips --- */
+.chips-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.85rem;
+    background: var(--home-surface);
+    border: 1px solid var(--home-border);
+    border-radius: 20px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--home-muted);
+    transition: background 0.15s;
+}
+
+.chip i {
+    font-size: 0.75rem;
+    color: var(--marker-orange);
+}
+
+.chip:hover {
+    background: var(--home-border);
+}
+
+/* --- 5. Accordions --- */
+.accordion {
+    border: 2px solid var(--home-border);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+}
+
+.accordion.open {
+    border-color: var(--marker-blue);
+}
+
+.accordion-toggle {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.85rem 1.1rem;
+    background: var(--home-surface);
+    border: none;
+    cursor: pointer;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--home-text);
+    transition: background 0.2s;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.accordion-toggle span {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.accordion-toggle span i {
+    color: var(--marker-blue);
+}
+
+.accordion-toggle:hover {
+    background: var(--marker-soft-blue);
+}
+
+.accordion-icon {
+    font-size: 0.75rem;
+    color: var(--home-muted);
+    transition: transform 0.3s ease;
+}
+
+.accordion.open .accordion-icon {
+    transform: rotate(180deg);
+}
+
+.accordion-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s ease, padding 0.35s ease;
+    padding: 0 1.1rem;
+    background: var(--home-card);
+}
+
+.accordion.open .accordion-content {
+    max-height: 600px;
+    padding: 1rem 1.1rem 1.25rem;
+}
+
+/* Coaching Points */
+.coaching-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.coaching-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    padding: 0.5rem 0;
+    color: var(--home-muted);
+    font-size: 0.9rem;
+    line-height: 1.5;
+    border-bottom: 1px solid var(--home-border);
+}
+
+.coaching-list li:last-child {
+    border-bottom: none;
+}
+
+.coaching-list li i {
+    color: var(--marker-green);
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+/* Variant Blocks */
+.variant-block {
+    margin-bottom: 1rem;
+}
+
+.variant-block:last-child {
+    margin-bottom: 0;
+}
+
+.variant-block h3 {
+    font-size: 0.88rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.variant-easier h3 {
+    color: var(--marker-green);
+}
+
+.variant-harder h3 {
+    color: var(--marker-red);
+}
+
+.variant-block ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.variant-block li {
+    padding: 0.35rem 0 0.35rem 1.4rem;
+    position: relative;
+    color: var(--home-muted);
+    font-size: 0.88rem;
+    line-height: 1.5;
+}
+
+.variant-block li::before {
+    content: "•";
+    position: absolute;
+    left: 0.4rem;
+    font-weight: bold;
+}
+
+.variant-easier li::before {
+    color: var(--marker-green);
+}
+
+.variant-harder li::before {
+    color: var(--marker-red);
+}
+
+/* --- 6. Footer: Success Box --- */
+.success-box {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.85rem;
+    padding: 1.1rem 1.25rem;
+    background: var(--marker-soft-green);
+    border: 2px solid rgba(22, 163, 74, 0.25);
+    border-left: 5px solid var(--marker-green);
+    border-radius: 12px;
+}
+
+.success-box>i {
+    color: var(--marker-green);
+    font-size: 1.3rem;
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.success-box strong {
+    display: block;
+    color: var(--marker-green);
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.25rem;
+}
+
+.success-box p {
+    margin: 0;
+    color: var(--home-muted);
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+
+/* --- Tags Cloud --- */
+.tags-cloud {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.3rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.tag:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+    text-decoration: none;
+}
+
+.tag-blue {
+    color: var(--marker-blue);
+    background: var(--marker-soft-blue);
+}
+
+.tag-red {
+    color: var(--marker-red);
+    background: var(--marker-soft-red);
+}
+
+.tag-green {
+    color: var(--marker-green);
+    background: var(--marker-soft-green);
+}
+
+.tag-orange {
+    color: var(--marker-orange);
+    background: var(--marker-soft-orange);
+}
+
+.tag-violet {
+    color: var(--marker-violet);
+    background: var(--marker-soft-violet);
+}
+
+
+/* ============================================================
+   MOBILE RESPONSIVE (≤ 768px)
+   ============================================================ */
+@media (max-width: 768px) {
+
+    /* Stack columns */
+    .detail-layout {
+        grid-template-columns: 1fr;
+    }
+
+    /* Player becomes sticky mini-header */
+    .player-column {
+        position: sticky;
+        top: 52px;
+        height: auto;
+        padding: 0.75rem;
+        z-index: 10;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .player-container {
+        aspect-ratio: 16 / 9;
+        max-height: 200px;
+        border-radius: 10px;
+    }
+
+    .player-play-btn {
+        width: 56px;
+        height: 56px;
+        font-size: 1.3rem;
+    }
+
+    .player-label {
+        font-size: 0.7rem;
+    }
+
+    /* Info Panel */
+    .info-panel {
+        height: auto;
+        overflow-y: visible;
+        border-left: none;
+        border-top: 2px solid var(--home-border);
+        padding: 1.5rem 1rem 2rem;
+    }
+
+    /* Title stacks */
+    .title-row {
+        flex-direction: column;
+        gap: 0.6rem;
+    }
+
+    .title-row h1 {
+        font-size: 1.35rem;
+    }
+
+    .btn-edit {
+        align-self: stretch;
+        justify-content: center;
+    }
+
+    /* Metadata: 2×2 grid */
+    .meta-bar {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .meta-item {
+        border-right: none;
+        border-bottom: 1px solid var(--home-border);
+        padding: 0.65rem 0.75rem;
+        justify-content: flex-start;
+    }
+
+    .meta-item:nth-child(odd) {
+        border-right: 1px solid var(--home-border);
+    }
+
+    .meta-item:nth-last-child(-n+2) {
+        border-bottom: none;
+    }
+
+    /* Accordions closed by default — handled by JS, but ensure compact sizing */
+    .accordion-toggle {
+        padding: 0.75rem 1rem;
+        font-size: 0.88rem;
+    }
+
+    .accordion-content {
+        font-size: 0.88rem;
+    }
+
+    /* Success box */
+    .success-box {
+        padding: 0.9rem 1rem;
+    }
+
+    /* Header */
+    .detail-header {
+        padding: 0.6rem 1rem;
+    }
+
+    .detail-logo {
+        font-size: 1.15rem;
+    }
+}
+
+/* ============================================================
+   LARGE DESKTOP (≥ 1400px)
+   ============================================================ */
+@media (min-width: 1400px) {
+    .player-container {
+        max-width: 960px;
+    }
+
+    .info-panel {
+        padding: 2.5rem 3rem 3rem;
+    }
+
+    .title-row h1 {
+        font-size: 1.8rem;
+    }
+}

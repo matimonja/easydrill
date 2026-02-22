@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Detalle de Ejercicio | EasyDrill</title>
+    <meta name="description" content="Visualiza y reproduce ejercicios tácticos con todos los detalles de coaching." />
+    <link rel="stylesheet" href="/src/ejercicio.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+</head>
+
+<body class="detail-page">
+    <!-- Top Nav -->
+    <header class="detail-header">
+        <a href="index.html" class="detail-logo">EasyDrill</a>
+        <nav class="detail-nav">
+            <a href="editor.html"><i class="fa-solid fa-arrow-left"></i> Volver al editor</a>
+        </nav>
+    </header>
+
+    <!-- Main Split Layout -->
+    <main class="detail-layout">
+        <!-- LEFT: Tactical Board Player -->
+        <section class="player-column">
+            <div class="player-container">
+                <div class="player-placeholder">
+                    <button class="player-play-btn" id="btn-play-drill" aria-label="Reproducir ejercicio">
+                        <i class="fa-solid fa-play"></i>
+                    </button>
+                    <span class="player-label">Pizarra Táctica</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- RIGHT: Info Panel -->
+        <section class="info-panel" id="info-panel">
+
+            <!-- 1. Header -->
+            <div class="detail-section detail-title-block">
+                <div class="title-row">
+                    <h1 id="exercise-title">Posesión 5v5 con Transiciones</h1>
+                    <a href="editor.html" class="btn-edit" id="btn-edit-exercise">
+                        <i class="fa-solid fa-pen-to-square"></i> Editar Ejercicio
+                    </a>
+                </div>
+                <span class="badge-objective" id="badge-objective">
+                    <i class="fa-solid fa-bullseye"></i> Transiciones rápidas
+                </span>
+            </div>
+
+            <!-- 2. Metadata Bar -->
+            <div class="detail-section meta-bar" id="meta-bar">
+                <div class="meta-item">
+                    <i class="fa-regular fa-clock"></i>
+                    <span id="meta-duration">15 min</span>
+                </div>
+                <div class="meta-item">
+                    <i class="fa-solid fa-shirt"></i>
+                    <span id="meta-players">5v5</span>
+                </div>
+                <div class="meta-item">
+                    <i class="fa-solid fa-vector-square"></i>
+                    <span id="meta-field">1/2 Cancha</span>
+                </div>
+                <div class="meta-item">
+                    <i class="fa-solid fa-tag"></i>
+                    <span id="meta-category">Sub-14</span>
+                </div>
+            </div>
+
+            <!-- 3. Description -->
+            <div class="detail-section" id="section-description">
+                <h2 class="section-heading">Descripción</h2>
+                <p class="description-text" id="exercise-description">
+                    Ejercicio de posesión en espacio reducido orientado a mejorar las transiciones ataque-defensa. Los
+                    equipos deben mantener la posesión con un máximo de 2 toques y buscar cambios de orientación
+                    rápidos. Al perder la pelota, presión inmediata durante 5 segundos.
+                </p>
+            </div>
+
+            <!-- 4. Materials -->
+            <div class="detail-section" id="section-materials">
+                <h2 class="section-heading">Materiales</h2>
+                <div class="chips-list" id="materials-list">
+                    <span class="chip"><i class="fa-solid fa-cone-striped"></i> 12 Conos</span>
+                    <span class="chip"><i class="fa-solid fa-futbol"></i> 20 Bochas</span>
+                    <span class="chip"><i class="fa-solid fa-shirt"></i> Pecheras (2 colores)</span>
+                    <span class="chip"><i class="fa-solid fa-whistle"></i> Silbato</span>
+                </div>
+            </div>
+
+            <!-- 5. Accordions -->
+            <div class="detail-section" id="section-coaching">
+                <div class="accordion" id="accordion-coaching">
+                    <button class="accordion-toggle" aria-expanded="false">
+                        <span><i class="fa-solid fa-clipboard-check"></i> Puntos Clave de Coaching</span>
+                        <i class="fa-solid fa-chevron-down accordion-icon"></i>
+                    </button>
+                    <div class="accordion-content">
+                        <ul class="coaching-list" id="coaching-list">
+                            <li><i class="fa-solid fa-check"></i> Mantener líneas de pase cortas y diagonales</li>
+                            <li><i class="fa-solid fa-check"></i> Comunicación constante entre jugadores</li>
+                            <li><i class="fa-solid fa-check"></i> Orientación del cuerpo antes de recibir</li>
+                            <li><i class="fa-solid fa-check"></i> Presión coordinada al perder la pelota</li>
+                            <li><i class="fa-solid fa-check"></i> Buscar superioridad numérica en zona de balón</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="detail-section" id="section-variants">
+                <div class="accordion" id="accordion-variants">
+                    <button class="accordion-toggle" aria-expanded="false">
+                        <span><i class="fa-solid fa-sliders"></i> Variantes y Progresiones</span>
+                        <i class="fa-solid fa-chevron-down accordion-icon"></i>
+                    </button>
+                    <div class="accordion-content">
+                        <div class="variant-block variant-easier">
+                            <h3><i class="fa-solid fa-arrow-down"></i> Para facilitar</h3>
+                            <ul id="variants-easier">
+                                <li>Permitir 3 toques por jugador</li>
+                                <li>Agregar un comodín neutral</li>
+                                <li>Ampliar el espacio de juego</li>
+                            </ul>
+                        </div>
+                        <div class="variant-block variant-harder">
+                            <h3><i class="fa-solid fa-arrow-up"></i> Para dificultar</h3>
+                            <ul id="variants-harder">
+                                <li>Reducir a 1 toque</li>
+                                <li>Achicar el espacio</li>
+                                <li>Limitar tiempo de posesión a 10 segundos</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. Footer -->
+            <div class="detail-section" id="section-success">
+                <div class="success-box" id="success-box">
+                    <i class="fa-solid fa-trophy"></i>
+                    <div>
+                        <strong>Criterio de éxito</strong>
+                        <p id="success-text">El equipo completa 8 pases consecutivos antes de buscar el cambio de
+                            orientación, manteniendo la presión post-pérdida durante al menos 5 segundos.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="detail-section" id="section-tags">
+                <div class="tags-cloud" id="tags-cloud">
+                    <a href="#" class="tag tag-blue">#posesión</a>
+                    <a href="#" class="tag tag-red">#transiciones</a>
+                    <a href="#" class="tag tag-green">#pressing</a>
+                    <a href="#" class="tag tag-orange">#espacio-reducido</a>
+                    <a href="#" class="tag tag-violet">#sub14</a>
+                    <a href="#" class="tag tag-blue">#5v5</a>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <script type="module" src="/src/ejercicio.ts"></script>
+</body>
+
+</html>

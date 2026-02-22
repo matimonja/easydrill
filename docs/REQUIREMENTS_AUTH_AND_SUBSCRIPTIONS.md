@@ -40,25 +40,41 @@
 ### 2.1 Infraestructura y despliegue
 
 - **Producción en AWS.** La solución de autenticación y datos debe poder desplegarse y operar en AWS (por ejemplo: frontend en S3/CloudFront, API en Lambda o ECS, base de datos en RDS o equivalente).
-- Se prioriza **Amazon Cognito** para autenticación (federación con Google), de modo que todo el flujo de identidad quede dentro de AWS. La base de datos de perfiles y planes puede ser RDS (PostgreSQL) o DynamoDB según se decida.
+- Se prioriza **Amazon Cognito** para autenticación (registro con email/contraseña + inicio de sesión con Google), de modo que todo el flujo de identidad quede dentro de AWS. La base de datos de perfiles y planes puede ser RDS (PostgreSQL) o DynamoDB según se decida.
 
 ### 2.2 Autenticación (v1)
 
-- **Solo “Iniciar sesión con Google”** en la primera versión. No implementar registro ni login con email y contraseña.
-- Flujo: el usuario hace clic en “Iniciar sesión con Google”, se redirige al flujo OAuth de Google y, tras éxito, vuelve a la aplicación con una sesión (JWT de Cognito).
-- **Experiencia de login:** Página dedicada de login (URL clara, adecuada para redirect OAuth). Tras login correcto, redirigir a la URL de origen (la página desde la que se pulsó “Iniciar sesión”) si existe `returnUrl`; si no, a la home.
+- **Dos métodos de autenticación:**
+  1. **Registro e inicio de sesión con email y contraseña** (nativo de Cognito).
+  2. **Inicio de sesión con Google** (federación OAuth vía Cognito).
+- Flujo de **registro con email:**
+  1. El usuario completa un formulario con email, contraseña y (opcionalmente) nombre.
+  2. Cognito envía un código de verificación al email.
+  3. El usuario introduce el código en una pantalla de confirmación.
+  4. Tras la confirmación, se inicia sesión automáticamente y se redirige a la URL de origen (`returnUrl`) o a la home.
+- Flujo de **inicio de sesión con Google:**
+  1. El usuario hace clic en "Continuar con Google".
+  2. Se redirige al flujo OAuth de Google (vía Cognito Hosted UI o SDK).
+  3. Tras éxito, vuelve a la aplicación con una sesión (JWT de Cognito).
+- Flujo de **recuperación de contraseña ("Olvidé mi contraseña"):**
+  1. El usuario introduce su email.
+  2. Cognito envía un código de recuperación.
+  3. El usuario introduce el código y una nueva contraseña.
+  4. Se redirige al login con un mensaje de éxito.
+- **Experiencia de login:** Página dedicada de login (URL clara). Incluye formulario de "Iniciar sesión" (email/contraseña), enlace a "Crear cuenta", y botón "Continuar con Google". Tras login o registro exitoso, redirigir a la URL de origen (`returnUrl`) si existe; si no, a la home.
+- **Vinculación de cuentas:** Si un usuario se registra con email y luego intenta iniciar sesión con Google (mismo email), Cognito vincula ambas identidades al mismo usuario. No se crean cuentas duplicadas.
 
 ### 2.3 Perfil de usuario y rol
 
 - **Rol (entrenador / club):** Debe poder **elegirse** y **modificarse** en cualquier momento (no solo al registrarse). Se guarda en la base de datos (perfil de usuario) y se muestra en home y perfil.
-- Nombre, avatar (y opcionalmente bio) pueden venir de Google y/o editarse en la app; si se editan en la app, persistir en backend.
+- Nombre, avatar (y opcionalmente bio) pueden venir de Google (si aplica) y/o editarse en la app; si se editan en la app, persistir en backend. El email proviene del registro o del proveedor de identidad (Google).
 - Las estadísticas del perfil (ejercicios, foros, forks) deben cargarse desde el backend cuando exista auth, reemplazando el uso actual de localStorage.
 
 ### 2.4 Planes y suscripciones
 
 - **Cantidad de planes:** 3 o 4. Los nombres comerciales se definen después; a nivel técnico usar IDs (ej. `free`, `basic`, `pro`, `team`).
 - **Asignación de plan (v1):** Solo **asignación manual** (sin pasarela de pago). Por ejemplo: cambio directo en base de datos o endpoint interno/admin (ej. `PATCH /api/users/:id/plan`).
-- **Plan por defecto:** Al registrarse (primera vez que inicia sesión con Google), el usuario recibe el plan gratuito (ej. `free`).
+- **Plan por defecto:** Al registrarse (primera vez que confirma su email o inicia sesión con Google), el usuario recibe el plan gratuito (ej. `free`).
 
 ### 2.5 Modelo de acceso: límites + funciones prohibidas
 
@@ -81,28 +97,66 @@
 
 ### 3.1 Configuración en AWS
 
-- Crear un **User Pool** de Cognito.
-- Configurar **Google** como proveedor de identidad federado (IdP). En Google Cloud Console: crear credenciales OAuth 2.0 (tipo “Web application”), configurar URLs de redirect autorizadas con la URL de Cognito (y en desarrollo, localhost si aplica).
-- En el User Pool, en “App integration”: crear un **App client** (público para SPA). Anotar **User Pool ID**, **Region**, **App client ID**. No exponer el client secret en el frontend (en SPA no se usa).
-- Opcional pero recomendado: habilitar “Hosted UI” de Cognito para el flujo de login con Google (redirect a la página de Cognito que muestra “Sign in with Google”), o implementar el flujo con el SDK (amplify-ui o amazon-cognito-identity-js) en la propia página de login.
+- Crear un **User Pool** de Cognito con **email como atributo de inicio de sesión** (sign-in alias: email).
+- **Registro nativo (email/contraseña):**
+  - Habilitar auto-registro (self sign-up) en el User Pool.
+  - **Política de contraseña:** Configurar requisitos mínimos (ej. 8 caracteres, al menos 1 mayúscula, 1 minúscula, 1 número). Cognito permite configurar esto en el User Pool.
+  - **Verificación de email:** Habilitar la verificación automática por correo (Cognito envía un código al email del usuario tras el registro). Configurar el mensaje de verificación (asunto y cuerpo personalizados con el nombre de la app).
+  - **Recuperación de cuenta:** Habilitar la recuperación de contraseña vía email (Cognito envía un código de recuperación).
+- **Proveedor federado (Google):**
+  - Configurar **Google** como proveedor de identidad federado (IdP). En Google Cloud Console: crear credenciales OAuth 2.0 (tipo "Web application"), configurar URLs de redirect autorizadas con la URL de Cognito (y en desarrollo, localhost si aplica).
+  - Mapear atributos de Google a Cognito: `email`, `name`, `picture` (avatar).
+- En "App integration": crear un **App client** (público para SPA). Anotar **User Pool ID**, **Region**, **App client ID**. No exponer el client secret en el frontend (en SPA no se usa).
+- Para el flujo de Google: habilitar "Hosted UI" de Cognito o usar el SDK (`amazon-cognito-identity-js`) para iniciar el flujo OAuth desde la propia página de login. Si se usa Hosted UI, configurar `VITE_COGNITO_DOMAIN`.
 
 ### 3.2 Variables de entorno
 
-- **Frontend (Vite):** Por ejemplo `VITE_COGNITO_USER_POOL_ID`, `VITE_COGNITO_CLIENT_ID`, `VITE_COGNITO_REGION`, y si se usa Hosted UI: `VITE_COGNITO_DOMAIN` (dominio del Hosted UI).
-- **Backend (Express/Lambda):** Variables para verificar JWT: región, User Pool ID; el backend usará la JWKS de Cognito para validar el token y extraer `sub` (y claims personalizados si se añaden).
+- **Frontend (Vite):** `VITE_COGNITO_USER_POOL_ID`, `VITE_COGNITO_CLIENT_ID`, `VITE_COGNITO_REGION`, y si se usa Hosted UI para Google: `VITE_COGNITO_DOMAIN`.
+- **Backend (Express/Lambda):** Variables para verificar JWT: región, User Pool ID; el backend usará la JWKS de Cognito para validar el token y extraer `sub` (y claims como email, name si se añaden).
 
-### 3.3 Flujo técnico
+### 3.3 Flujo técnico — Registro con email/contraseña
 
-1. Usuario entra a la página de login (ej. `/login.html`).
-2. Clic en “Continuar con Google”: redirigir a Cognito Hosted UI (o iniciar flujo OAuth con el SDK). Cognito redirige a Google y, tras éxito, Cognito devuelve al callback de la app con códigos/tokens.
-3. La app intercambia código por tokens (id_token, access_token, refresh_token) y los almacena de forma segura (por ejemplo en memoria + refresh con HttpOnly cookie si el backend gestiona sesión, o solo en memoria para SPA; evitar localStorage para tokens si hay requisitos estrictos de seguridad; para v1 puede usarse el enfoque estándar de Cognito para SPA).
-4. En cada petición al backend, enviar el token en cabecera `Authorization: Bearer <id_token o access_token>` (según lo que el backend espere).
-5. El backend verifica el JWT con la JWKS de Cognito y obtiene `sub` (identificador único del usuario) para asociar peticiones a un usuario.
+1. Usuario entra a la página de login (ej. `/login.html`) y selecciona "Crear cuenta".
+2. Completa el formulario: **email**, **contraseña**, **nombre** (opcional).
+3. El frontend llama a `CognitoUserPool.signUp(email, password, attributes)` usando el SDK (`amazon-cognito-identity-js`).
+4. Cognito envía un **código de verificación** al email. La UI muestra un campo para introducir el código.
+5. El usuario introduce el código; el frontend llama a `cognitoUser.confirmRegistration(code)`.
+6. Tras confirmación exitosa, se inicia sesión automáticamente (llamar a `cognitoUser.authenticateUser(email, password)`) y se obtienen los tokens.
+7. Se llama a `GET /api/me` para crear el perfil en la BD y se redirige a `returnUrl` o home.
 
-### 3.4 Creación de perfil en base de datos
+### 3.4 Flujo técnico — Inicio de sesión con email/contraseña
 
-- La primera vez que un usuario inicia sesión (identificado por `sub` de Cognito), el backend debe crear un **perfil** en la base de datos (o un job/trigger que lo haga). Ese perfil tendrá `plan_id` por defecto (plan gratuito) y campos para rol, nombre, avatar, etc.
-- Si se usa solo backend propio (Express + RDS), un endpoint tipo `GET /api/me` o `POST /api/auth/sync` puede: verificar el JWT, buscar usuario por `sub`; si no existe, crearlo con plan `free` y datos básicos de Google (nombre, email, avatar si vienen en el token), y devolver perfil + plan.
+1. Usuario introduce **email** y **contraseña** en el formulario de login.
+2. El frontend llama a `cognitoUser.authenticateUser(authDetails)` con el SDK.
+3. Cognito devuelve `id_token`, `access_token`, `refresh_token`.
+4. Los tokens se almacenan de forma segura (en memoria para SPA; para v1 puede usarse el almacenamiento estándar del SDK de Cognito).
+5. En cada petición al backend, enviar el token en cabecera `Authorization: Bearer <id_token o access_token>`.
+6. El backend verifica el JWT con la JWKS de Cognito y obtiene `sub` (identificador único del usuario).
+
+### 3.5 Flujo técnico — Inicio de sesión con Google
+
+1. Usuario hace clic en "Continuar con Google" en la página de login.
+2. Se redirige a Cognito Hosted UI (o se inicia flujo OAuth con el SDK). Cognito redirige a Google.
+3. Tras éxito en Google, Cognito devuelve al callback de la app con códigos/tokens.
+4. La app intercambia el código por tokens (id_token, access_token, refresh_token) y los almacena.
+5. Se llama a `GET /api/me` para crear/obtener el perfil y se redirige a `returnUrl` o home.
+
+### 3.6 Flujo técnico — Recuperación de contraseña
+
+1. En la pantalla de login, el usuario hace clic en "Olvidé mi contraseña".
+2. Introduce su email. El frontend llama a `cognitoUser.forgotPassword()`.
+3. Cognito envía un **código de recuperación** al email.
+4. El usuario introduce el código y la nueva contraseña. El frontend llama a `cognitoUser.confirmPassword(code, newPassword)`.
+5. Se muestra un mensaje de éxito y se redirige al formulario de login.
+
+> [!NOTE]
+> Este flujo solo aplica a usuarios que se registraron con email/contraseña. Los usuarios que solo usan Google no tienen contraseña en Cognito.
+
+### 3.7 Creación de perfil en base de datos
+
+- La primera vez que un usuario inicia sesión (identificado por `sub` de Cognito, sin importar si fue con email o con Google), el backend debe crear un **perfil** en la base de datos. Ese perfil tendrá `plan_id` por defecto (plan gratuito) y campos para rol, nombre, avatar, etc.
+- El endpoint `GET /api/me` (o `POST /api/auth/sync`): verificar el JWT, buscar usuario por `sub`; si no existe, crearlo con plan `free` y datos del token (email, nombre, avatar si vienen del token de Google o de los atributos de Cognito), y devolver perfil + plan.
+- **Vinculación de cuentas:** Si un usuario tiene el mismo email registrado con ambos métodos, Cognito puede vincular las identidades automáticamente (configurar "Account linking" en el User Pool). El backend debe manejar el `sub` de Cognito como identificador primario.
 
 ---
 
@@ -113,7 +167,7 @@
 - **users (o profiles)**  
   - `id` (UUID o string, PK).  
   - `cognito_sub` (string, único) – identificador del usuario en Cognito.  
-  - `email` (string, opcional si viene de Google).  
+  - `email` (string, único, requerido) – email de registro.  
   - `display_name` (string).  
   - `avatar_url` (string, opcional).  
   - `role` (enum o string: `entrenador` | `club`).  
@@ -143,11 +197,22 @@
 ### 5.1 Cliente de autenticación
 
 - **Archivo sugerido:** `src/auth/client.ts` (o `src/auth/cognito.ts`).
+- Dependencia: `amazon-cognito-identity-js` (npm). Este paquete permite registrar, autenticar y gestionar usuarios contra Cognito sin necesidad de Amplify completo.
 - Responsabilidades:
-  - Inicializar/configurar el cliente de Cognito (User Pool ID, Client ID, región).
-  - Exportar: `getCurrentUser()`, `getSession()` (o equivalente para obtener tokens), `signInWithGoogle()` (que redirija a Hosted UI o use SDK), `signOut()`.
-  - Si se usa Hosted UI: construir la URL de login y la URL de callback; en la página de callback, intercambiar código por tokens y guardarlos; redirigir a `returnUrl` o home.
-- Mantener un estado mínimo de “usuario logueado” (por ejemplo evento o callback al cambiar sesión) para que la navegación y los guards reaccionen.
+  - Inicializar/configurar `CognitoUserPool` con User Pool ID y Client ID.
+  - Exportar:
+    - `signUp(email, password, name?)` — registrar usuario en Cognito (email/contraseña).
+    - `confirmSignUp(email, code)` — confirmar el código de verificación de email.
+    - `signIn(email, password)` — autenticar con email y contraseña y obtener tokens.
+    - `signInWithGoogle()` — redirigir al flujo OAuth de Google (vía Hosted UI o SDK).
+    - `signOut()` — cerrar sesión (invalidar tokens locales).
+    - `forgotPassword(email)` — iniciar flujo de recuperación de contraseña.
+    - `confirmForgotPassword(email, code, newPassword)` — confirmar nueva contraseña con código.
+    - `getCurrentUser()` — obtener usuario actual (si hay sesión activa).
+    - `getSession()` — obtener tokens actuales (id_token, access_token).
+    - `resendConfirmationCode(email)` — reenviar código de verificación.
+  - Si se usa Hosted UI para Google: construir la URL de login y manejar el callback; en la página de callback, intercambiar código por tokens y guardarlos; redirigir a `returnUrl` o home.
+- Mantener un estado mínimo de "usuario logueado" (por ejemplo evento o callback al cambiar sesión) para que la navegación y los guards reaccionen.
 
 ### 5.2 Estado de usuario y plan
 
@@ -167,14 +232,30 @@
   - `can(planId, feature: string): boolean` – indica si el plan permite esa feature (ej. `can(planId, 'can_subscribe_bolsa_notifications')`).
   - Opcional: `isWithinLimit(planId, usageKey: string, currentCount: number): boolean` usando `getLimits(planId)`.
 
-### 5.4 Página de login
+### 5.4 Página de login y registro
 
-- **Archivo sugerido:** `login.html` + entry en Vite (ej. `src/login.ts`).
-- Contenido:
-  - Un único CTA principal: “Continuar con Google” (o “Iniciar sesión con Google”). Al hacer clic, iniciar flujo Cognito (Hosted UI o SDK).
-  - Antes de redirigir a login, la app debe guardar en sessionStorage (o similar) la URL actual como `returnUrl` para redirigir después del login.
-  - Página de callback (puede ser la misma `login.html` con query param `?code=...` o ruta `/login/callback`): intercambiar código por tokens, llamar a `GET /api/me` para crear/obtener perfil, luego `window.location.href = returnUrl || '/'`.
-  - Mostrar mensajes de error si el login falla (token inválido, usuario canceló, etc.).
+- **Archivo sugerido:** `login.html` + entry en Vite (ej. `src/login.ts`, `src/login.css`).
+- **Vistas/estados de la página** (manejados por JS, sin recargar):
+  1. **Iniciar sesión (por defecto):** Formulario con campos email y contraseña + botón "Iniciar sesión". Debajo: botón "Continuar con Google" (separado visualmente con un divisor "o"). Enlace "¿Olvidaste tu contraseña?" debajo del formulario. Enlace "¿No tenés cuenta? Crear una" para cambiar a la vista de registro.
+  2. **Crear cuenta:** Formulario con campos nombre (opcional), email, contraseña, confirmar contraseña + botón "Crear cuenta". Debajo: botón "Continuar con Google". Enlace "¿Ya tenés cuenta? Iniciar sesión" para volver.
+  3. **Verificar email:** Tras el registro con email, mostrar campo para el código de verificación + botón "Confirmar". Enlace "Reenviar código".
+  4. **Recuperar contraseña — paso 1:** Campo email + botón "Enviar código".
+  5. **Recuperar contraseña — paso 2:** Campos: código, nueva contraseña, confirmar nueva contraseña + botón "Cambiar contraseña".
+- **Validaciones en el frontend:**
+  - Email: formato válido.
+  - Contraseña: mínimo 8 caracteres, al menos 1 mayúscula, 1 minúscula, 1 número (coherente con la política de Cognito).
+  - Confirmar contraseña: coincide con el campo de contraseña.
+  - Mostrar errores inline debajo de cada campo.
+- **Manejo de errores de Cognito:**
+  - `UserNotFoundException` → "No existe una cuenta con ese email".
+  - `NotAuthorizedException` → "Email o contraseña incorrectos".
+  - `UsernameExistsException` → "Ya existe una cuenta con ese email".
+  - `CodeMismatchException` → "Código de verificación incorrecto".
+  - `ExpiredCodeException` → "El código ha expirado, solicitá uno nuevo".
+  - Otros errores → mensaje genérico con detalle del error.
+- **Flujo post-login/registro:** Tras autenticarse con éxito (por cualquier método), llamar a `GET /api/me` para crear/obtener perfil, luego `window.location.href = returnUrl || '/'`.
+- **Callback de Google:** La misma `login.html` con query param `?code=...` (o ruta dedicada) intercambia el código OAuth por tokens y continúa con el flujo post-login.
+- Antes de navegar a la página de login, la app debe guardar en sessionStorage la URL actual como `returnUrl`.
 - Sustituir **todos** los `href="#login"` del proyecto por `href="/login.html"` (o la ruta base que se use). Añadir `returnUrl` al enlace si se desea (ej. `/login.html?returnUrl=/marketplace.html`).
 
 ### 5.5 Navegación (header)
@@ -207,14 +288,14 @@
 ### 6.2 Middleware de autenticación
 
 - **Archivo sugerido:** `server/src/middleware/auth.ts`.
-- Leer cabecera `Authorization: Bearer <token>`. Verificar el JWT con la JWKS de Cognito (usar librería tipo `jsonwebtoken` + `jwks-rsa` o el SDK de Cognito). Extraer `sub` y opcionalmente email/name si vienen en el token.
-- Adjuntar a `req` un objeto `req.user` con al menos `sub` (y si ya se ha resuelto contra la BD: `userId`, `planId`, `role`). Si no hay token o es inválido, responder **401 Unauthorized**.
+- Leer cabecera `Authorization: Bearer <token>`. Verificar el JWT con la JWKS de Cognito (usar librería tipo `jsonwebtoken` + `jwks-rsa` o el SDK de Cognito). Extraer `sub` y `email` del token.
+- Adjuntar a `req` un objeto `req.user` con al menos `sub` y `email` (y si ya se ha resuelto contra la BD: `userId`, `planId`, `role`). Si no hay token o es inválido, responder **401 Unauthorized**.
 
 ### 6.3 Endpoints
 
 - **GET /api/me**  
   - Protegido con middleware auth.  
-  - Buscar usuario por `cognito_sub` (req.user.sub). Si no existe, crearlo con plan `free`, rol por defecto (ej. `entrenador`) y datos del token (nombre, email, avatar si están).  
+  - Buscar usuario por `cognito_sub` (req.user.sub). Si no existe, crearlo con plan `free`, rol por defecto (ej. `entrenador`) y datos del token (email del claim; nombre si se configuró como atributo).  
   - Devolver: `{ user: { id, displayName, avatar, role, email }, planId, limits, features }` (o equivalente). Incluir `limits` y `features` derivados del plan para que el frontend no tenga que duplicar la lógica de planes.
 
 - **PATCH /api/me**  
@@ -238,9 +319,9 @@
 
 | Área | Crear | Modificar |
 |------|--------|-----------|
-| Auth frontend | `src/auth/client.ts` (Cognito), `src/auth/user.ts` (estado + perfil/plan) | — |
+| Auth frontend | `src/auth/client.ts` (Cognito: email/password + Google), `src/auth/user.ts` (estado + perfil/plan) | `package.json` (añadir `amazon-cognito-identity-js`) |
 | Config | `src/config/plans.ts` (límites, features, `getLimits`, `can`) | — |
-| Login | `login.html`, `src/login.ts` (entry en Vite), página callback si aplica | `vite.config.ts` (entry login) |
+| Login | `login.html`, `src/login.ts` (entry en Vite, con vistas: login, registro, verificación email, recuperar contraseña), `src/login.css` | `vite.config.ts` (entry login) |
 | Guards / uso | `src/auth/guards.ts` opcional (helpers para “dentro de límite”, “puede feature”) | Entries de páginas que usen límites (marketplace, bolsa, etc.), `src/core/Game.ts` (optimize si se restringe) |
 | Nav / UI | — | Todos los HTML con `href="#login"` → `/login.html`; lógica del header para mostrar usuario/avatar y “Cerrar sesión” |
 | Perfil | — | `src/perfil.ts` (datos desde API, edición de rol, plan actual) |
@@ -252,10 +333,10 @@
 
 ## 8. Orden de implementación sugerido
 
-1. **Configurar Cognito:** User Pool, Google como IdP, App client. Variables de entorno en front y back.
+1. **Configurar Cognito:** User Pool con email como alias, política de contraseña, verificación por email, Google como IdP federado, App client. Variables de entorno en front y back.
 2. **Base de datos:** Crear tablas `plans` y `users` (o `profiles`); seed de planes. Definir y crear tablas para ejercicios guardados y datos de bolsa si aplica.
 3. **Backend auth:** Middleware que verifique JWT de Cognito y exponga `req.user`. Endpoints `GET /api/me` y `PATCH /api/me` con creación de usuario en primer login.
-4. **Frontend auth:** Cliente Cognito en `src/auth/client.ts`, flujo de login con Google (Hosted UI o SDK), página `login.html` y callback. Sustituir `#login` por `/login.html` y actualizar nav.
+4. **Frontend auth:** Instalar `amazon-cognito-identity-js`. Cliente Cognito en `src/auth/client.ts` con funciones de registro (email), login (email + Google), verificación de email, recuperación de contraseña. Página `login.html` con formularios y botón Google. Sustituir `#login` por `/login.html` y actualizar nav.
 5. **Estado usuario y plan:** Módulo `src/auth/user.ts` que llame a `/api/me` y guarde perfil + planId. `src/config/plans.ts` con límites y features.
 6. **Aplicar límites y permisos:** En backend, aplicar límites en endpoints de “guardar ejercicio” y “listar bolsa”. En frontend, comprobar límites antes de guardar y ocultar/deshabilitar “suscribirse a notificaciones” según `can(planId, 'can_subscribe_bolsa_notifications')`. Opcional: restringir “optimizar drill” por plan en `Game.ts` y en `POST /api/optimize-drill`.
 7. **Perfil:** Adaptar `src/perfil.ts` a datos de API y edición de rol.
@@ -265,7 +346,9 @@
 
 ## 9. Criterios de aceptación resumidos
 
-- Un usuario puede iniciar sesión solo con Google; no hay formulario de email/contraseña.
+- Un usuario puede registrarse e iniciar sesión con **email y contraseña**, o iniciar sesión directamente con **Google**.
+- Tras el registro con email, se solicita un código de verificación por email antes de poder iniciar sesión.
+- Existe un flujo de "Olvidé mi contraseña" con código de recuperación por email (solo para usuarios registrados con email/contraseña).
 - Tras el login se redirige a la página de origen (returnUrl) o a home.
 - El usuario tiene un perfil en BD con rol (entrenador/club) y plan; el rol es editable desde el perfil.
 - Por defecto el plan es el gratuito. El plan se puede cambiar solo de forma manual (BD o endpoint admin).
@@ -275,4 +358,4 @@
 
 ---
 
-*Documento generado para guiar la implementación completa del sistema de autenticación y suscripciones. Actualizar este documento si se añaden planes, features o límites nuevos.*
+*Documento generado para guiar la implementación completa del sistema de autenticación (email/contraseña + Google) y suscripciones. Actualizar este documento si se añaden planes, features, límites nuevos, o proveedores de identidad adicionales.*
