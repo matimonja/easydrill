@@ -9,6 +9,7 @@ import { CommandManager } from './CommandManager';
 import { AnimationManager } from './AnimationManager';
 import { RemoveEntityCommand, AddEntityCommand, MoveEntityCommand, RemoveActionChainCommand } from './Commands';
 import { IGameContext, ToolType, ShapeType, Entity } from './Interfaces';
+import { ExerciseZoneConfig } from './ExerciseZoneConfig';
 
 // Tools
 import { Tool } from '../tools/Tool';
@@ -50,13 +51,19 @@ export class Game implements IGameContext {
     // Optimization State
     private useAIOptimization: boolean = false;
 
+    // Exercise Zone Configuration (optional, passed from setup screen)
+    private zoneConfig?: ExerciseZoneConfig;
+    private _zoneSelected: boolean = false;
+    private _zoneEditEnabled: boolean = false;
+
     // Pointer / pinch state (mobile & desktop)
     private activePointerId: number | null = null;
     private pinchPointers: Map<number, { clientX: number; clientY: number }> = new Map();
     private pinchInitialDistance: number = 0;
     private pinchInitialZoom: number = 1;
 
-    constructor(canvasId: string) {
+    constructor(canvasId: string, zoneConfig?: ExerciseZoneConfig) {
+        this.zoneConfig = zoneConfig;
         const canvas = document.getElementById(canvasId) as HTMLCanvasElement;
         if (!canvas) throw new Error('Canvas not found');
 
@@ -109,6 +116,9 @@ export class Game implements IGameContext {
         this.selectedEntity = entity;
         if (this.selectedEntity) this.selectedEntity.isSelected = true;
 
+        // Deselect zone when selecting an entity
+        if (entity) this._zoneSelected = false;
+
         if (this.currentMode === 'edit') {
             this.updateSelectionUI();
         }
@@ -116,6 +126,61 @@ export class Game implements IGameContext {
 
     public getSelectedEntity(): Entity | null {
         return this.selectedEntity;
+    }
+
+    // --- Zone selection/editing methods ---
+
+    public hasZone(): boolean {
+        return !!this.zoneConfig && this.zoneConfig.preset !== 'full';
+    }
+
+    public isZoneSelected(): boolean {
+        return this._zoneSelected;
+    }
+
+    public isZoneEditing(): boolean {
+        return this._zoneSelected && this._zoneEditEnabled;
+    }
+
+    public selectZone(): void {
+        // Deselect any entity first
+        if (this.selectedEntity) {
+            this.selectedEntity.isSelected = false;
+            this.selectedEntity = null;
+        }
+        this._zoneSelected = true;
+        if (this.currentMode === 'edit') {
+            this.updateSelectionUI();
+        }
+    }
+
+    public deselectZone(): void {
+        this._zoneSelected = false;
+        this._zoneEditEnabled = false;
+        if (this.currentMode === 'edit') {
+            this.updateSelectionUI();
+        }
+    }
+
+    public getZoneRect(): { x: number; y: number; w: number; h: number } | null {
+        if (!this.zoneConfig || this.zoneConfig.preset === 'full') return null;
+        return { ...this.zoneConfig.zone };
+    }
+
+    public setZoneRect(rect: { x: number; y: number; w: number; h: number }): void {
+        if (!this.zoneConfig) return;
+        this.zoneConfig.zone = { ...rect };
+    }
+
+    public getZoneHandles(): { id: string; x: number; y: number }[] {
+        const z = this.getZoneRect();
+        if (!z) return [];
+        return [
+            { id: 'nw', x: z.x, y: z.y },
+            { id: 'ne', x: z.x + z.w, y: z.y },
+            { id: 'sw', x: z.x, y: z.y + z.h },
+            { id: 'se', x: z.x + z.w, y: z.y + z.h },
+        ];
     }
 
     public setTool(toolId: ToolType) {
@@ -341,6 +406,15 @@ export class Game implements IGameContext {
         btnModeEdit?.addEventListener('click', () => switchMode('edit'));
         btnModePlay?.addEventListener('click', () => switchMode('play'));
 
+        // Save & Settings buttons
+        document.getElementById('btn-save')?.addEventListener('click', () => {
+            // TODO: Implement save logic
+            console.log('[EasyDrill] Guardar – pendiente de implementación');
+        });
+        document.getElementById('btn-settings')?.addEventListener('click', () => {
+            window.location.href = 'setup.html';
+        });
+
         // Inject Scene Controls
         const modesSection = document.querySelector('.section-modes');
         if (modesSection) {
@@ -362,6 +436,7 @@ export class Game implements IGameContext {
                 <button class="mode-btn" id="scene-next" style="width: 24px; height: 24px; font-size: 12px;"><i class="fa-solid fa-chevron-right"></i></button>
             </div>
             <button class="prop-btn" id="scene-add" style="padding: 2px 8px; font-size: 0.75rem; width: 100%; justify-content: center; height: 24px;"><i class="fa-solid fa-plus"></i> Nueva</button>
+            <button class="prop-btn danger" id="scene-delete" style="padding: 2px 8px; font-size: 0.75rem; width: 100%; justify-content: center; height: 24px; display: none;"><i class="fa-solid fa-trash"></i> Eliminar</button>
         `;
             sep.after(sceneSection);
 
@@ -372,6 +447,7 @@ export class Game implements IGameContext {
                 this.sceneCount++;
                 this.setScene(this.sceneCount - 1);
             });
+            document.getElementById('scene-delete')?.addEventListener('click', () => this.deleteScene());
         }
 
         // Tool Buttons
@@ -415,6 +491,10 @@ export class Game implements IGameContext {
             toolbarCollapseBtn.setAttribute('aria-label', collapsed ? 'Expandir menú' : 'Colapsar menú');
             toolbarCollapseBtn.title = collapsed ? 'Expandir menú' : 'Colapsar menú';
         });
+
+        // Properties Side Panel (mobile)
+        const btnCloseProps = document.getElementById('btn-close-props-panel');
+        btnCloseProps?.addEventListener('click', () => this.closePropsPanel());
 
         // Animation Controls
         const btnAnimPlay = document.getElementById('anim-play');
@@ -490,6 +570,9 @@ export class Game implements IGameContext {
         const display = document.getElementById('scene-display');
         if (display) display.textContent = (this.currentScene + 1).toString();
 
+        // Update delete button visibility
+        this.updateSceneButtons();
+
         // Update Entities
         this.entities.forEach(e => {
             if (e instanceof Player) {
@@ -501,19 +584,128 @@ export class Game implements IGameContext {
         this.selectEntity(null);
     }
 
+    private updateSceneButtons() {
+        const deleteBtn = document.getElementById('scene-delete');
+        if (deleteBtn) {
+            const canDelete = this.sceneCount > 1 && this.currentScene === this.sceneCount - 1;
+            deleteBtn.style.display = canDelete ? '' : 'none';
+        }
+    }
+
+    private deleteScene() {
+        if (this.sceneCount <= 1 || this.currentScene !== this.sceneCount - 1) return;
+
+        const sceneNumber = this.currentScene + 1;
+        this.showConfirmDialog(
+            `¿Eliminar Escena ${sceneNumber}?`,
+            'Se eliminará todo lo correspondiente a esta escena (acciones, movimientos, etc.). Esta acción no se puede deshacer.',
+            () => {
+                const sceneToDelete = this.currentScene;
+
+                // Remove all actions belonging to this scene from every player
+                this.entities.forEach(e => {
+                    if (e instanceof Player) {
+                        e.actions = e.actions.filter(a => a.sceneIndex !== sceneToDelete);
+                    }
+                });
+
+                this.sceneCount--;
+                this.setScene(sceneToDelete - 1);
+            }
+        );
+    }
+
+    private showConfirmDialog(title: string, message: string, onConfirm: () => void) {
+        // Remove any existing dialog
+        document.getElementById('confirm-dialog-overlay')?.remove();
+
+        const overlay = document.createElement('div');
+        overlay.id = 'confirm-dialog-overlay';
+        overlay.className = 'confirm-dialog-overlay';
+        overlay.innerHTML = `
+            <div class="confirm-dialog">
+                <div class="confirm-dialog-title">${title}</div>
+                <div class="confirm-dialog-message">${message}</div>
+                <div class="confirm-dialog-actions">
+                    <button class="confirm-dialog-btn cancel" id="confirm-cancel">Cancelar</button>
+                    <button class="confirm-dialog-btn confirm" id="confirm-ok">Eliminar</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+
+        document.getElementById('confirm-cancel')!.addEventListener('click', () => overlay.remove());
+        document.getElementById('confirm-ok')!.addEventListener('click', () => {
+            overlay.remove();
+            onConfirm();
+        });
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) overlay.remove();
+        });
+    }
+
+    private isMobileView(): boolean {
+        return window.matchMedia('(max-width: 768px)').matches;
+    }
+
+    private openPropsPanel(title: string): void {
+        const panel = document.getElementById('properties-side-panel');
+        const titleEl = document.getElementById('props-panel-title');
+        if (panel) panel.classList.remove('collapsed');
+        if (titleEl) titleEl.textContent = title;
+    }
+
+    public closePropsPanel(): void {
+        const panel = document.getElementById('properties-side-panel');
+        if (panel) panel.classList.add('collapsed');
+    }
+
+
+
+    private setupAccordionListeners(container: HTMLElement): void {
+        container.querySelectorAll('.accordion-header').forEach(header => {
+            header.addEventListener('click', () => {
+                const section = header.closest('.accordion-section');
+                section?.classList.toggle('open');
+            });
+        });
+    }
+
+    private wrapInAccordion(title: string, content: string, openByDefault: boolean = false): string {
+        return `
+            <div class="accordion-section${openByDefault ? ' open' : ''}">
+                <button class="accordion-header">
+                    <span>${title}</span>
+                    <i class="fa-solid fa-chevron-down accordion-chevron"></i>
+                </button>
+                <div class="accordion-body">${content}</div>
+            </div>
+        `;
+    }
+
     private updatePropertiesPanel(tool: ToolType | null) {
         const propertiesPanel = document.getElementById('properties-panel');
         if (!propertiesPanel) return;
         propertiesPanel.innerHTML = '';
 
+        // Also clear the mobile side panel content
+        const mobilePanelContent = document.getElementById('props-panel-content');
+        if (mobilePanelContent) mobilePanelContent.innerHTML = '';
+
         if (this.currentMode === 'play') {
             propertiesPanel.innerHTML = '<span class="placeholder-text-small">Modo Reproducción</span>';
+            this.closePropsPanel();
             return;
         }
 
         if (!tool) {
+            this.closePropsPanel();
             return;
         }
+
+        const isMobile = this.isMobileView();
+        // On mobile, we render into the side panel
+        const targetPanel = isMobile ? mobilePanelContent! : propertiesPanel;
 
         if (tool === 'exercise') {
             const exTool = this.tools.get('exercise') as ExerciseTool;
@@ -541,7 +733,8 @@ export class Game implements IGameContext {
              `;
             }
 
-            propertiesPanel.innerHTML = html;
+            targetPanel.innerHTML = html;
+            if (isMobile) this.openPropsPanel('Objetos');
 
             document.getElementById('ex-cone')?.addEventListener('click', () => { exTool.setObjectType('cone'); this.updatePropertiesPanel('exercise'); });
             document.getElementById('ex-ball')?.addEventListener('click', () => { exTool.setObjectType('ball'); this.updatePropertiesPanel('exercise'); });
@@ -561,9 +754,10 @@ export class Game implements IGameContext {
 
         if (tool === 'action') {
             if (this.selectedEntity instanceof Player) {
-                this.renderPlayerActionUI(propertiesPanel, this.selectedEntity);
+                this.renderPlayerActionUI(targetPanel, this.selectedEntity);
+                if (isMobile) this.openPropsPanel('Acciones');
             } else {
-                propertiesPanel.innerHTML = '<span class="placeholder-text-small">Dibujando Acción...</span>';
+                targetPanel.innerHTML = '<span class="placeholder-text-small">Dibujando Acción...</span>';
             }
             return;
         }
@@ -571,16 +765,19 @@ export class Game implements IGameContext {
         if (tool === 'shape') {
             const shapeTool = this.tools.get('shape') as ShapeTool;
 
-            propertiesPanel.innerHTML = `
-             <button class="prop-btn" id="shape-line" title="Línea"><i class="fa-solid fa-slash"></i></button>
-             <button class="prop-btn" id="shape-free" title="Libre"><i class="fa-solid fa-pencil"></i></button>
-             <button class="prop-btn" id="shape-rect" title="Rectángulo"><i class="fa-regular fa-square"></i></button>
-             <button class="prop-btn" id="shape-circle" title="Círculo/Óvalo"><i class="fa-regular fa-circle"></i></button>
-             <button class="prop-btn" id="shape-tri" title="Triángulo"><i class="fa-solid fa-play fa-rotate-270"></i></button>
+            targetPanel.innerHTML = `
+             <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+               <button class="prop-btn" id="shape-line" title="Línea"><i class="fa-solid fa-slash"></i></button>
+               <button class="prop-btn" id="shape-free" title="Libre"><i class="fa-solid fa-pencil"></i></button>
+               <button class="prop-btn" id="shape-rect" title="Rectángulo"><i class="fa-regular fa-square"></i></button>
+               <button class="prop-btn" id="shape-circle" title="Círculo/Óvalo"><i class="fa-regular fa-circle"></i></button>
+               <button class="prop-btn" id="shape-tri" title="Triángulo"><i class="fa-solid fa-play fa-rotate-270"></i></button>
+             </div>
           `;
+            if (isMobile) this.openPropsPanel('Formas');
 
             const setActiveBtn = (id: string) => {
-                propertiesPanel.querySelectorAll('.prop-btn').forEach(b => b.classList.remove('active-prop'));
+                targetPanel.querySelectorAll('.prop-btn').forEach(b => b.classList.remove('active-prop'));
                 document.getElementById(id)?.classList.add('active-prop');
             };
 
@@ -595,13 +792,16 @@ export class Game implements IGameContext {
         } else if (tool === 'camera') {
             const camTool = this.tools.get('camera') as CameraTool;
 
-            propertiesPanel.innerHTML = `
-            <button class="prop-btn" id="cam-pan-toggle" title="Activar Paneo"><i class="fa-solid fa-hand"></i> Paneo</button>
-            <button class="prop-btn" id="cam-zoom-out" title="Alejar"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
-            <button class="prop-btn" id="cam-zoom-in" title="Acercar"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
-            <button class="prop-btn" id="cam-rotate" title="Rotar Vista"><i class="fa-solid fa-rotate"></i> Rotar</button>
-            <button class="prop-btn" id="cam-reset" title="Centrar"><i class="fa-solid fa-compress"></i></button>
+            targetPanel.innerHTML = `
+            <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+              <button class="prop-btn" id="cam-pan-toggle" title="Activar Paneo"><i class="fa-solid fa-hand"></i> Paneo</button>
+              <button class="prop-btn" id="cam-zoom-out" title="Alejar"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+              <button class="prop-btn" id="cam-zoom-in" title="Acercar"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+              <button class="prop-btn" id="cam-rotate" title="Rotar Vista"><i class="fa-solid fa-rotate"></i> Rotar</button>
+              <button class="prop-btn" id="cam-reset" title="Centrar"><i class="fa-solid fa-compress"></i></button>
+            </div>
           `;
+            if (isMobile) this.openPropsPanel('Cámara');
 
             const panBtn = document.getElementById('cam-pan-toggle');
             if (panBtn) {
@@ -652,31 +852,67 @@ export class Game implements IGameContext {
             });
             colorPaletteHtml += '</div>';
 
-            propertiesPanel.innerHTML = `
-             <div class="menu-control-group" style="margin-bottom: 0; width: 120px;">
-                  <label class="menu-label">Equipo</label>
-                  <select id="create-player-team" class="menu-select">
-                      <option value="A" ${currentTeam === 'A' ? 'selected' : ''}>Equipo A</option>
-                      <option value="B" ${currentTeam === 'B' ? 'selected' : ''}>Equipo B</option>
-                  </select>
-             </div>
+            if (isMobile) {
+                // Mobile: use accordion layout in side panel
+                const teamContent = `
+                    <div class="menu-control-group" style="margin-bottom: 0;">
+                        <select id="create-player-team" class="menu-select">
+                            <option value="A" ${currentTeam === 'A' ? 'selected' : ''}>Equipo A</option>
+                            <option value="B" ${currentTeam === 'B' ? 'selected' : ''}>Equipo B</option>
+                        </select>
+                    </div>
+                `;
+                const colorContent = `
+                    <div class="menu-control-group" style="margin-bottom: 0;">
+                        ${colorPaletteHtml}
+                        <div style="display: flex; align-items: center; gap: 8px; margin-top: 6px;">
+                            <span style="font-size: 0.8rem; color: #888;">Custom:</span>
+                            <input type="color" id="create-player-color" class="menu-input" value="${currentColor}" style="flex: 1; height: 30px;">
+                        </div>
+                    </div>
+                `;
+                const qtyContent = `
+                    <div class="menu-control-group" style="margin-bottom: 0;">
+                        <label class="menu-label">Cantidad: <span id="create-player-qty-val">${currentQty}</span></label>
+                        <input type="range" id="create-player-qty" class="menu-input" min="1" max="11" step="1" value="${currentQty}">
+                    </div>
+                `;
 
-             <div class="menu-control-group" style="margin-bottom: 0; min-width: 200px;">
-                  <label class="menu-label">Color</label>
-                  ${colorPaletteHtml}
-                  <div style="display: flex; align-items: center; gap: 8px;">
-                     <span style="font-size: 0.8rem; color: #888;">Personalizado:</span>
-                     <input type="color" id="create-player-color" class="menu-input" value="${currentColor}" style="flex: 1; height: 30px;">
-                  </div>
-             </div>
+                targetPanel.innerHTML =
+                    this.wrapInAccordion('Equipo', teamContent, true) +
+                    this.wrapInAccordion('Color', colorContent, true) +
+                    this.wrapInAccordion('Cantidad', qtyContent, true);
 
-             <div class="menu-control-group" style="margin-bottom: 0; width: 100px;">
-                  <label class="menu-label">Cantidad: <span id="create-player-qty-val">${currentQty}</span></label>
-                  <input type="range" id="create-player-qty" class="menu-input" min="1" max="11" step="1" value="${currentQty}">
-             </div>
-          `;
+                this.setupAccordionListeners(targetPanel);
+                this.openPropsPanel('Crear Jugador');
+            } else {
+                // Desktop: horizontal layout in bottom toolbar
+                targetPanel.innerHTML = `
+                 <div class="menu-control-group" style="margin-bottom: 0; width: 120px;">
+                      <label class="menu-label">Equipo</label>
+                      <select id="create-player-team" class="menu-select">
+                          <option value="A" ${currentTeam === 'A' ? 'selected' : ''}>Equipo A</option>
+                          <option value="B" ${currentTeam === 'B' ? 'selected' : ''}>Equipo B</option>
+                      </select>
+                 </div>
 
-            // Listeners
+                 <div class="menu-control-group" style="margin-bottom: 0; min-width: 200px;">
+                      <label class="menu-label">Color</label>
+                      ${colorPaletteHtml}
+                      <div style="display: flex; align-items: center; gap: 8px;">
+                         <span style="font-size: 0.8rem; color: #888;">Personalizado:</span>
+                         <input type="color" id="create-player-color" class="menu-input" value="${currentColor}" style="flex: 1; height: 30px;">
+                      </div>
+                 </div>
+
+                 <div class="menu-control-group" style="margin-bottom: 0; width: 100px;">
+                      <label class="menu-label">Cantidad: <span id="create-player-qty-val">${currentQty}</span></label>
+                      <input type="range" id="create-player-qty" class="menu-input" min="1" max="11" step="1" value="${currentQty}">
+                 </div>
+              `;
+            }
+
+            // Listeners (shared between mobile/desktop)
             document.getElementById('create-player-team')?.addEventListener('change', (e) => {
                 playerTool.setTeam((e.target as HTMLSelectElement).value);
             });
@@ -687,7 +923,7 @@ export class Game implements IGameContext {
                 document.getElementById('create-player-qty-val')!.textContent = val.toString();
             });
 
-            propertiesPanel.querySelectorAll('.color-swatch').forEach(swatch => {
+            targetPanel.querySelectorAll('.color-swatch').forEach(swatch => {
                 swatch.addEventListener('click', (e) => {
                     const c = (e.target as HTMLElement).dataset.color;
                     if (c) {
@@ -706,27 +942,32 @@ export class Game implements IGameContext {
             if (this.selectedEntity) {
                 const p = this.selectedEntity;
                 if (p instanceof Player) {
-                    this.renderPlayerActionUI(propertiesPanel, p);
+                    this.renderPlayerActionUI(targetPanel, p);
+                    if (isMobile) this.openPropsPanel('Jugador');
                 } else if (p instanceof BaseShape) {
                     // Shape Selection UI
-                    propertiesPanel.innerHTML = `
+                    targetPanel.innerHTML = `
                      <button class="prop-btn danger" id="prop-delete" title="Eliminar"><i class="fa-solid fa-trash"></i> Eliminar</button>
                   `;
+                    if (isMobile) this.openPropsPanel('Forma');
                     document.getElementById('prop-delete')?.addEventListener('click', () => this.deleteSelected());
                 } else if (p instanceof BaseAction) {
                     // Action Selection UI
-                    propertiesPanel.innerHTML = `
+                    targetPanel.innerHTML = `
                      <button class="prop-btn danger" id="prop-delete" title="Eliminar"><i class="fa-solid fa-trash"></i> Eliminar</button>
                   `;
+                    if (isMobile) this.openPropsPanel('Acción');
                     document.getElementById('prop-delete')?.addEventListener('click', () => this.deleteSelected());
                 } else if (p instanceof Cone || p instanceof Ball || p instanceof ConeGroup) {
-                    propertiesPanel.innerHTML = `
+                    targetPanel.innerHTML = `
                      <button class="prop-btn danger" id="prop-delete" title="Eliminar"><i class="fa-solid fa-trash"></i> Eliminar</button>
                   `;
+                    if (isMobile) this.openPropsPanel('Objeto');
                     document.getElementById('prop-delete')?.addEventListener('click', () => this.deleteSelected());
                 }
             } else {
-                propertiesPanel.innerHTML = '<span class="placeholder-text-small">Seleccione un elemento para ver sus propiedades</span>';
+                targetPanel.innerHTML = '<span class="placeholder-text-small">Seleccione un elemento para ver sus propiedades</span>';
+                this.closePropsPanel();
             }
         }
     }
@@ -813,7 +1054,7 @@ export class Game implements IGameContext {
 
         // En móvil el menú solo se abre de forma explícita (botón), no al seleccionar
         const isMobile = window.matchMedia('(max-width: 768px)').matches;
-        if (this.selectedEntity && !isMobile) {
+        if ((this.selectedEntity || this._zoneSelected) && !isMobile) {
             secondaryMenu?.classList.remove('collapsed');
             btnOpenMenu?.classList.add('hidden');
         }
@@ -837,6 +1078,67 @@ export class Game implements IGameContext {
         if (!menuContent) return;
 
         if (!this.selectedEntity) {
+            // Check if zone is selected instead
+            if (this._zoneSelected && this.zoneConfig) {
+                const z = this.zoneConfig.zone;
+                let zoneHtml = `
+                  <div class="menu-control-group">
+                      <h3 style="margin:0 0 8px; font-size: 1rem; color: #fb923c;">
+                          <i class="fa-solid fa-vector-square" style="margin-right:6px;"></i>Zona del ejercicio
+                      </h3>
+                      <p style="color:#888; font-size:0.8rem; margin:0 0 12px;">
+                          Define el área de trabajo del ejercicio.
+                      </p>
+                  </div>
+                  <div class="menu-control-group checkbox-wrapper">
+                      <input type="checkbox" id="zone-edit-toggle" ${this._zoneEditEnabled ? 'checked' : ''}>
+                      <label class="menu-label" for="zone-edit-toggle">Habilitar edición</label>
+                  </div>`;
+
+                if (this._zoneEditEnabled) {
+                    // Convert world units to meters (10 units = 1 m)
+                    const UNITS_PER_METER = 10;
+                    const wMeters = (z.w / UNITS_PER_METER).toFixed(1);
+                    const hMeters = (z.h / UNITS_PER_METER).toFixed(1);
+                    zoneHtml += `
+                    <div class="menu-control-group">
+                        <label class="menu-label">Largo (m)</label>
+                        <input type="number" id="zone-prop-w" class="menu-input" value="${wMeters}" step="0.5" min="2">
+                    </div>
+                    <div class="menu-control-group">
+                        <label class="menu-label">Ancho (m)</label>
+                        <input type="number" id="zone-prop-h" class="menu-input" value="${hMeters}" step="0.5" min="2">
+                    </div>`;
+                }
+
+                menuContent.innerHTML = zoneHtml;
+
+                // Wire up the toggle
+                const toggleEl = document.getElementById('zone-edit-toggle') as HTMLInputElement;
+                toggleEl?.addEventListener('change', () => {
+                    this._zoneEditEnabled = toggleEl.checked;
+                    this.updateSecondaryMenu(); // Re-render to show/hide fields
+                });
+
+                // Wire up dimension inputs (meters → world units)
+                if (this._zoneEditEnabled) {
+                    const UNITS_PER_METER = 10;
+                    const bindDim = (id: string, prop: 'w' | 'h') => {
+                        const el = document.getElementById(id) as HTMLInputElement;
+                        el?.addEventListener('change', () => {
+                            const meters = parseFloat(el.value);
+                            if (!isNaN(meters) && meters >= 2) {
+                                (this.zoneConfig!.zone as any)[prop] = meters * UNITS_PER_METER;
+                            }
+                        });
+                    };
+                    bindDim('zone-prop-w', 'w');
+                    bindDim('zone-prop-h', 'h');
+                }
+
+                return;
+            }
+
             menuContent.innerHTML = '<p class="placeholder-text">Seleccione un elemento para ver sus propiedades.</p>';
             return;
         }
@@ -1476,10 +1778,38 @@ export class Game implements IGameContext {
     }
 
     public start() {
+        // Apply zone view if configured from setup screen
+        if (this.zoneConfig) {
+            this.applyZoneView(this.zoneConfig);
+        }
         requestAnimationFrame((t) => {
             this.lastTime = t;
             this.loop(t);
         });
+    }
+
+    /**
+     * Adjusts camera position and zoom to center and frame the given zone
+     * so it occupies ~85% of the viewport.
+     */
+    private applyZoneView(config: ExerciseZoneConfig): void {
+        const z = config.zone;
+
+        // Rotate camera first if the zone is taller than wide (better screen usage)
+        if (config.rotate) {
+            this.camera.rotation = -Math.PI / 2;
+        }
+
+        // Center camera on zone center
+        this.camera.x = z.x + z.w / 2;
+        this.camera.y = z.y + z.h / 2;
+
+        // When rotated, the canvas width maps to zone height and vice versa
+        const viewW = config.rotate ? this.canvas.height : this.canvas.width;
+        const viewH = config.rotate ? this.canvas.width : this.canvas.height;
+        const zoomX = viewW / z.w;
+        const zoomY = viewH / z.h;
+        this.camera.zoom = Math.min(zoomX, zoomY) * 0.85;
     }
 
     private lastTime: number = 0;
@@ -1514,6 +1844,54 @@ export class Game implements IGameContext {
         this.camera.applyTransform(this.ctx, this.canvas);
 
         this.field.draw(this.ctx);
+
+        // Draw exercise zone indicator rectangle (if zone selected and not full)
+        if (this.zoneConfig && this.zoneConfig.preset !== 'full') {
+            const z = this.zoneConfig.zone;
+            const invZoom = 1 / this.camera.zoom;
+            this.ctx.save();
+
+            if (this._zoneSelected) {
+                // Selected state: solid, thicker border
+                this.ctx.strokeStyle = 'rgba(251, 146, 60, 1)';
+                this.ctx.lineWidth = (this._zoneEditEnabled ? 3 : 2.5) * invZoom;
+                this.ctx.setLineDash([]);
+                this.ctx.strokeRect(z.x, z.y, z.w, z.h);
+                // Brighter fill when selected
+                this.ctx.fillStyle = 'rgba(251, 146, 60, 0.12)';
+                this.ctx.fillRect(z.x, z.y, z.w, z.h);
+
+                // Draw corner handles when editing is enabled
+                if (this._zoneEditEnabled) {
+                    const handleSize = 8 * invZoom;
+                    const corners = [
+                        { x: z.x, y: z.y },
+                        { x: z.x + z.w, y: z.y },
+                        { x: z.x, y: z.y + z.h },
+                        { x: z.x + z.w, y: z.y + z.h },
+                    ];
+                    for (const c of corners) {
+                        this.ctx.fillStyle = '#fb923c';
+                        this.ctx.strokeStyle = '#ffffff';
+                        this.ctx.lineWidth = 1.5 * invZoom;
+                        this.ctx.fillRect(c.x - handleSize / 2, c.y - handleSize / 2, handleSize, handleSize);
+                        this.ctx.strokeRect(c.x - handleSize / 2, c.y - handleSize / 2, handleSize, handleSize);
+                    }
+                }
+            } else {
+                // Default (not selected): dashed, subtle
+                this.ctx.strokeStyle = 'rgba(251, 146, 60, 0.8)';
+                this.ctx.lineWidth = 2 * invZoom;
+                this.ctx.setLineDash([8 * invZoom, 5 * invZoom]);
+                this.ctx.strokeRect(z.x, z.y, z.w, z.h);
+                this.ctx.fillStyle = 'rgba(251, 146, 60, 0.08)';
+                this.ctx.fillRect(z.x, z.y, z.w, z.h);
+                this.ctx.setLineDash([]);
+            }
+
+            this.ctx.restore();
+        }
+
         this.entities.forEach(entity => entity.draw(this.ctx, this.currentScene));
 
         if (this.currentMode === 'play') {

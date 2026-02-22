@@ -12,9 +12,9 @@ export interface Entity {
 }
 
 export interface IActionOwner {
-    updateActionChain(): void;
-    x: number;
-    y: number;
+  updateActionChain(): void;
+  x: number;
+  y: number;
 }
 
 export type ToolType = 'select' | 'player' | 'camera' | 'shape' | 'action' | 'exercise';
@@ -25,21 +25,31 @@ export type ShapeType = 'rectangle' | 'circle' | 'triangle' | 'line' | 'freehand
  * This decouples the concrete Game implementation from its consumers.
  */
 export interface IGameContext {
-    canvas: HTMLCanvasElement;
-    ctx: CanvasRenderingContext2D;
-    camera: Camera;
-    commandManager: CommandManager;
-    entities: Entity[];
-    
-    currentScene: number; // Added property
-    
-    addEntity(entity: Entity): void;
-    removeEntity(entity: Entity): void;
-    selectEntity(entity: Entity | null): void;
-    getSelectedEntity(): Entity | null;
-    setTool(tool: ToolType): void;
-    
-    // UI Helpers that might be triggered by tools
-    updateSelectionUI(): void;
+  canvas: HTMLCanvasElement;
+  ctx: CanvasRenderingContext2D;
+  camera: Camera;
+  commandManager: CommandManager;
+  entities: Entity[];
+
+  currentScene: number; // Added property
+
+  addEntity(entity: Entity): void;
+  removeEntity(entity: Entity): void;
+  selectEntity(entity: Entity | null): void;
+  getSelectedEntity(): Entity | null;
+  setTool(tool: ToolType): void;
+
+  // UI Helpers that might be triggered by tools
+  updateSelectionUI(): void;
+
+  // Zone rectangle helpers
+  hasZone(): boolean;
+  isZoneSelected(): boolean;
+  isZoneEditing(): boolean;
+  selectZone(): void;
+  deselectZone(): void;
+  getZoneRect(): { x: number; y: number; w: number; h: number } | null;
+  setZoneRect(rect: { x: number; y: number; w: number; h: number }): void;
+  getZoneHandles(): { id: string; x: number; y: number }[];
 }
 

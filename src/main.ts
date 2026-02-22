@@ -1,7 +1,9 @@
 import { Game } from './core/Game';
+import { loadZoneConfig } from './core/ExerciseZoneConfig';
 
 window.addEventListener('DOMContentLoaded', () => {
-  const game = new Game('gameCanvas');
+  const zoneConfig = loadZoneConfig();
+  const game = new Game('gameCanvas', zoneConfig ?? undefined);
   game.start();
 });
 

@@ -353,8 +353,36 @@ function initHeroBackground(): void {
   ro.observe(hero);
 }
 
+/* --- Mobile navigation toggle --- */
+function initMobileNav(): void {
+  const toggle = document.getElementById('nav-toggle') as HTMLButtonElement | null;
+  const nav = document.getElementById('home-nav') as HTMLElement | null;
+  if (!toggle || !nav) return;
+
+  toggle.addEventListener('click', () => {
+    const isOpen = nav.classList.toggle('open');
+    toggle.setAttribute('aria-expanded', String(isOpen));
+    // Swap icon
+    const icon = toggle.querySelector('i')!;
+    icon.className = isOpen ? 'fa-solid fa-xmark' : 'fa-solid fa-bars';
+    // Lock body scroll when menu is open
+    document.body.style.overflow = isOpen ? 'hidden' : '';
+  });
+
+  // Close menu when clicking a nav link
+  nav.querySelectorAll('a').forEach(link => {
+    link.addEventListener('click', () => {
+      nav.classList.remove('open');
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.querySelector('i')!.className = 'fa-solid fa-bars';
+      document.body.style.overflow = '';
+    });
+  });
+}
+
 if (document.body.classList.contains('home')) {
   initHome();
   initCarousel();
   initHeroBackground();
+  initMobileNav();
 }
