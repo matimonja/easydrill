@@ -2,6 +2,8 @@
  * Bolsa de trabajo: búsqueda, filtros por tipo de puesto y listado de ofertas.
  */
 
+import { initNavAuth } from './auth/nav-auth';
+
 type JobType = 'entrenador' | 'coordinador' | 'preparador' | 'otro';
 
 const JOB_TYPE_LABELS: Record<JobType, string> = {
@@ -91,7 +93,7 @@ function renderJobCard(job: Job): string {
       </div>
       <p class="bolsa-card-desc">${escapeHtml(job.description)}</p>
       <div class="bolsa-card-actions">
-        <a href="#login" title="Iniciar sesión para postularte"><i class="fa-solid fa-paper-plane"></i> Postularme</a>
+        <a href="login.html" title="Iniciar sesión para postularte"><i class="fa-solid fa-paper-plane"></i> Postularme</a>
       </div>
     </article>
   `;
@@ -209,4 +211,5 @@ function initBolsa(): void {
 
 if (document.body.classList.contains('bolsa-page')) {
   initBolsa();
+  initNavAuth();
 }

@@ -3,6 +3,8 @@
  * Solo se carga en index.html; el editor carga main.ts.
  */
 
+import { initNavAuth } from './auth/nav-auth';
+
 type Profile = 'entrenador' | 'club';
 
 const STORAGE_KEY = 'easydrill-profile';
@@ -385,4 +387,5 @@ if (document.body.classList.contains('home')) {
   initCarousel();
   initHeroBackground();
   initMobileNav();
+  initNavAuth();
 }

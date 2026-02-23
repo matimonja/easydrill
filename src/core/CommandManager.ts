@@ -8,13 +8,17 @@ export class CommandManager {
   private redoStack: Command[] = [];
   private maxHistory: number = 50;
 
+  /** Callback fired after any state change (execute, undo, redo). */
+  public onChange: (() => void) | null = null;
+
   public execute(command: Command) {
     command.execute();
     this.history.push(command);
-    this.redoStack = []; 
+    this.redoStack = [];
     if (this.history.length > this.maxHistory) {
       this.history.shift();
     }
+    this.onChange?.();
   }
 
   public undo() {
@@ -22,6 +26,7 @@ export class CommandManager {
     if (command) {
       command.undo();
       this.redoStack.push(command);
+      this.onChange?.();
     }
   }
 
@@ -30,6 +35,7 @@ export class CommandManager {
     if (command) {
       command.execute();
       this.history.push(command);
+      this.onChange?.();
     }
   }
 }

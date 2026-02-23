@@ -3,6 +3,8 @@
  * Placeholder con hilos de ejemplo; en el futuro conectar con backend.
  */
 
+import { initNavAuth } from './auth/nav-auth';
+
 type CategoryId = 'ejercicios' | 'funcionalidades' | 'general';
 
 interface Thread {
@@ -72,7 +74,7 @@ function escapeHtml(s: string): string {
 function renderThread(thread: Thread): string {
   return `
     <li>
-      <a href="#login" class="comunidad-thread" data-id="${thread.id}" title="Iniciar sesión para ver el hilo">
+      <a href="login.html" class="comunidad-thread" data-id="${thread.id}" title="Iniciar sesión para ver el hilo">
         <div class="comunidad-thread-title">${escapeHtml(thread.title)}</div>
         <p class="comunidad-thread-excerpt" style="margin:0 0 0.35rem; font-size:0.9rem; color:var(--home-muted);">${escapeHtml(thread.excerpt)}</p>
         <div class="comunidad-thread-meta">
@@ -117,4 +119,5 @@ function initComunidad(): void {
 
 if (document.body.classList.contains('comunidad-page')) {
   initComunidad();
+  initNavAuth();
 }

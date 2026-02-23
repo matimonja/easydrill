@@ -2,6 +2,9 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   base: '/',
+  define: {
+    global: 'globalThis',
+  },
   build: {
     rollupOptions: {
       input: {
@@ -14,6 +17,7 @@ export default defineConfig({
         comunidad: 'comunidad.html',
         perfil: 'perfil.html',
         ejercicio: 'ejercicio.html',
+        login: 'login.html',
       },
     },
   },

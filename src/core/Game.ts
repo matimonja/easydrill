@@ -10,6 +10,8 @@ import { AnimationManager } from './AnimationManager';
 import { RemoveEntityCommand, AddEntityCommand, MoveEntityCommand, RemoveActionChainCommand } from './Commands';
 import { IGameContext, ToolType, ShapeType, Entity } from './Interfaces';
 import { ExerciseZoneConfig } from './ExerciseZoneConfig';
+import { ExerciseStorage } from '../persistence/ExerciseStorage';
+import type { ExerciseMetadata } from '../persistence/types';
 
 // Tools
 import { Tool } from '../tools/Tool';
@@ -62,8 +64,15 @@ export class Game implements IGameContext {
     private pinchInitialDistance: number = 0;
     private pinchInitialZoom: number = 1;
 
-    constructor(canvasId: string, zoneConfig?: ExerciseZoneConfig) {
+    // Persistence
+    private exerciseId: string;
+    private exerciseStorage: ExerciseStorage;
+    private exerciseMetadata: ExerciseMetadata = { title: 'Sin título' };
+
+    constructor(canvasId: string, zoneConfig?: ExerciseZoneConfig, exerciseId?: string) {
         this.zoneConfig = zoneConfig;
+        this.exerciseId = exerciseId || ExerciseStorage.generateId();
+        this.exerciseStorage = new ExerciseStorage();
         const canvas = document.getElementById(canvasId) as HTMLCanvasElement;
         if (!canvas) throw new Error('Canvas not found');
 
@@ -75,6 +84,15 @@ export class Game implements IGameContext {
         this.field = new Field();
         this.commandManager = new CommandManager();
         this.animationManager = new AnimationManager();
+
+        // Wire auto-save: any command execution triggers a debounced save
+        this.commandManager.onChange = () => {
+            this.exerciseStorage.scheduleAutoSave(
+                this.exerciseId,
+                this.getGameSnapshot(),
+                this.exerciseMetadata
+            );
+        };
 
         // Initialize Tools
         this.tools.set('select', new SelectTool(this));
@@ -93,6 +111,11 @@ export class Game implements IGameContext {
         this.setTool('select');
 
         window.addEventListener('resize', () => this.resize());
+
+        // Load exercise if ID was provided
+        if (exerciseId) {
+            this.loadExercise(exerciseId);
+        }
     }
 
     // --- IGameContext Implementation ---
@@ -408,8 +431,7 @@ export class Game implements IGameContext {
 
         // Save & Settings buttons
         document.getElementById('btn-save')?.addEventListener('click', () => {
-            // Navigate to exercise detail page
-            window.location.href = 'ejercicio.html';
+            this.saveAndNavigate();
         });
         document.getElementById('btn-settings')?.addEventListener('click', () => {
             window.location.href = 'setup.html';
@@ -1942,6 +1964,85 @@ export class Game implements IGameContext {
                 btnAnimPlay.style.pointerEvents = 'auto';
             }
         }
+    }
+
+    // ─── Persistence Methods ─────────────────────────────────────
+
+    /** Create a snapshot of current game state for the persistence layer. */
+    private getGameSnapshot(): import('../persistence/ExerciseStorage').GameSnapshot {
+        return {
+            entities: this.entities,
+            currentScene: this.currentScene,
+            sceneCount: this.sceneCount,
+            camera: {
+                x: this.camera.x,
+                y: this.camera.y,
+                zoom: this.camera.zoom,
+                rotation: this.camera.rotation,
+            },
+            canvas: this.canvas,
+            zoneConfig: this.zoneConfig ?? null,
+        };
+    }
+
+    /** Load and restore a saved exercise by ID. */
+    private async loadExercise(exerciseId: string): Promise<void> {
+        const doc = await this.exerciseStorage.load(exerciseId);
+        if (!doc) return;
+
+        // Restore metadata
+        this.exerciseMetadata = doc.metadata || { title: 'Sin título' };
+
+        // 1. Zone config
+        if (doc.zoneConfig) {
+            this.zoneConfig = { ...doc.zoneConfig } as ExerciseZoneConfig;
+        }
+
+        // 2. Clear existing entities
+        this.entities.length = 0;
+
+        // 3. Deserialize entities (using the static deserialize logic inline)
+        const { deserializeEntity } = await import('../persistence/EntitySerializer');
+        for (const item of doc.entities.items) {
+            const entity = deserializeEntity(item);
+            if (entity) {
+                this.entities.push(entity);
+            }
+        }
+
+        // 4. Rebuild action chains for all players
+        for (const entity of this.entities) {
+            if (entity instanceof Player) {
+                entity.updateActionChain();
+            }
+        }
+
+        // 5. Scenes — set BEFORE calling updateSceneState
+        this.sceneCount = doc.scenes.count || 1;
+        this.currentScene = doc.scenes.current || 0;
+        this.updateSceneState();
+
+        // 6. Camera
+        if (doc.editorState?.camera) {
+            this.camera.x = doc.editorState.camera.x;
+            this.camera.y = doc.editorState.camera.y;
+            this.camera.zoom = doc.editorState.camera.zoom;
+            this.camera.rotation = doc.editorState.camera.rotation || 0;
+        }
+
+        // 7. Deselect all
+        this.selectEntity(null);
+    }
+
+    /** Save the exercise and navigate to the detail page. */
+    private async saveAndNavigate(): Promise<void> {
+        await this.exerciseStorage.save(
+            this.exerciseId,
+            this.getGameSnapshot(),
+            this.exerciseMetadata,
+            'complete'
+        );
+        window.location.href = `ejercicio.html?id=${this.exerciseId}`;
     }
 
     private serializeDrillState(): any {

@@ -3,6 +3,8 @@
  * Solo se carga en marketplace.html.
  */
 
+import { initNavAuth } from './auth/nav-auth';
+
 type TagId = 'pases' | 'posesion' | 'ataque' | 'defensa' | 'transicion' | 'salida' | 'contencion' | 'press';
 
 const TAG_CLASS: Record<TagId, string> = {
@@ -247,4 +249,5 @@ function initMarketplace(): void {
 
 if (document.body.classList.contains('marketplace-page')) {
   initMarketplace();
+  initNavAuth();
 }
