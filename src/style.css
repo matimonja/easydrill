@@ -468,8 +468,8 @@ body {
   line-height: 1.5;
 }
 
-/* Mostrar overlay solo en portrait en viewports pequeños (smartphones) */
-@media (max-width: 768px) and (orientation: portrait) {
+/* Mostrar overlay solo en portrait en viewports más pequeños que iPad Mini (ancho o alto < 744px) */
+@media (max-width: 743px) and (orientation: portrait), (max-height: 743px) and (orientation: portrait) {
   .rotate-overlay {
     display: flex;
   }
@@ -479,7 +479,7 @@ body {
   }
 }
 
-@media (max-width: 768px) and (orientation: landscape) {
+@media (max-width: 743px) and (orientation: landscape), (max-height: 743px) and (orientation: landscape) {
   .rotate-overlay {
     display: none !important;
   }
@@ -541,8 +541,8 @@ body {
   /* Hidden on desktop */
 }
 
-/* --- Mobile / tablet: editor (small viewports) --- */
-@media (max-width: 768px) {
+/* --- Dispositivos más pequeños que iPad Mini (ancho o alto < 744px) --- */
+@media (max-width: 743px), (max-height: 743px) {
   :root {
     --toolbar-height: 48px;
   }

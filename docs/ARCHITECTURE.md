@@ -13,7 +13,7 @@ The `Game` class acts as the central controller (Mediator). It initializes the s
 - **UI**: The HTML overlay controls.
 
 ### 2. State Pattern for Tools (`src/tools/`)
-Interaction logic is encapsulated in specific `Tool` classes. The `Game` context delegates input events (`mousedown`, `mousemove`, `mouseup`) to the active tool.
+Interaction logic is encapsulated in specific `Tool` classes. The `Game` context delegates input events (`pointerdown`, `pointermove`, `pointerup`, `pointercancel`) to the active tool; the `Tool` interface uses `PointerLikeEvent` so the same code works for mouse and touch.
 - **`Tool` Interface**: Defines the contract for input handling and rendering.
 - **`SelectTool`**: Handles entity selection, moving (drag), resizing (handles), and rotation.
 - **`ShapeTool`**: Handles the creation of geometric shapes (Rectangle, Circle, Triangle, Line, Freehand).
@@ -54,28 +54,50 @@ Actions define the *behavior* and *path* of players during animation.
 ## Directory Structure
 ```
 src/
-├── config/         # Default configurations (colors, shapes)
+├── auth/           # Authentication and user state
+│   ├── client.ts   # Cognito (email/password, Google, verification, forgot password)
+│   ├── user.ts     # Profile + plan state, sync with GET /api/me, fetchWithAuth
+│   ├── nav-auth.ts # Header: login link vs user/avatar + sign out
+│   └── guards.ts   # Helpers for limits and feature flags by plan
+├── config/         # Default configurations (colors, shapes, plans)
+│   ├── defaults.ts
+│   ├── plans.ts    # Plan IDs, limits, features (getLimits, can)
+│   └── animation.ts
 ├── core/           # Core engine logic
 │   ├── Game.ts     # Main controller
 │   ├── AnimationManager.ts # Animation logic
 │   ├── Camera.ts   # View transform logic
 │   ├── Commands.ts # Command definitions
+│   ├── CommandManager.ts
 │   ├── Interfaces.ts # Decoupling interfaces
-│   └── ...
+│   └── ExerciseZoneConfig.ts
 ├── entities/       # Game objects
 │   ├── Player.ts
 │   ├── Action.ts   # Action definitions
 │   ├── ExerciseObjects.ts # Cones, Balls, Groups
 │   ├── Field.ts
-│   └── Shape.ts
+│   ├── Shape.ts
+│   └── Goal.ts
+├── persistence/    # Exercise storage (serialization, types)
+│   ├── EntitySerializer.ts
+│   ├── ExerciseStorage.ts
+│   └── types.ts
 ├── tools/          # Interaction logic (State Pattern)
-│   ├── ActionTool.ts # Creating actions
-│   ├── ExerciseTool.ts # Placing cones/bails
-│   └── ...
+│   ├── Tool.ts     # Interface (PointerLikeEvent)
+│   ├── BaseTool.ts
+│   ├── SelectTool.ts
+│   ├── ShapeTool.ts
+│   ├── PlayerTool.ts
+│   ├── ActionTool.ts
+│   ├── CameraTool.ts
+│   └── ExerciseTool.ts
 ├── main.ts         # Entry point for the Board Engine
-├── marketplace.ts  # Entry point for Marketplace page
+├── login.ts        # Entry point for login page
+├── login.css
 ├── home.ts         # Entry point for Home page
-└── ...             # Other platform entry points
+├── marketplace.ts  # Entry point for Marketplace page
+├── perfil.ts       # Profile page (data from API when logged in)
+└── ...             # Other platform entry points (aprendizaje, comunidad, bolsa-de-trabajo, ejercicio, setup)
 ```
 
 ## Future Refactoring Opportunities

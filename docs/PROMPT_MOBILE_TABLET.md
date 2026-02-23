@@ -14,16 +14,16 @@ Antes de codificar, leer (desde la raíz del proyecto, carpeta `docs/`):
 - **`docs/AI_GUIDELINES.md`** – Lógica de interacción en Tools, no en Game; Commands para cambios de estado; preventDefault en eventos del canvas.
 - **`docs/PROMPT.md`** – Estilo, modularidad y requisitos de respuesta.
 
-**Estado actual del input en el editor:**
+**Estado actual del input en el editor (ya implementado):**
 
-- En **`Game.ts`** (`setupEvents()`): el canvas tiene `mousedown`; en `window` se escuchan `mousemove` y `mouseup`. El zoom usa solo `wheel` en el canvas.
-- La interfaz **`Tool`** (`src/tools/Tool.ts`) define `onMouseDown(e: MouseEvent)`, `onMouseMove(e: MouseEvent)`, `onMouseUp(e: MouseEvent)`.
-- **`BaseTool`** (`src/tools/BaseTool.ts`) ofrece `getWorldPoint(e: MouseEvent)` usando `e.clientX`, `e.clientY` y `canvas.getBoundingClientRect()`.
-- Todas las Tools (SelectTool, PlayerTool, ShapeTool, ActionTool, CameraTool, ExerciseTool) reciben solo eventos de ratón.
-- No hay eventos táctiles ni Pointer Events; no hay pinch-to-zoom.
-- El CSS del editor (`src/style.css`) no tiene media queries para el editor; toolbar fija (`--toolbar-height: 120px`), menú secundario fijo 260px de ancho.
+- En **`Game.ts`** (`setupEvents()`): el canvas usa **Pointer Events** (`pointerdown`, `pointermove`, `pointerup`, `pointercancel`); en `pointerdown` se llama a `canvas.setPointerCapture(pointerId)` para que el arrastre siga aunque el dedo salga del canvas. El zoom usa `wheel` en desktop y **pinch con dos dedos** en móvil/tablet (`startPinch`, `updatePinch`, `endPinch`).
+- La interfaz **`Tool`** (`src/tools/Tool.ts`) define `onMouseDown(e: PointerLikeEvent)`, `onMouseMove(e: PointerLikeEvent)`, `onMouseUp(e: PointerLikeEvent)` — `PointerLikeEvent` es alias de `PointerEvent`, válido para ratón y tacto.
+- **`BaseTool.getWorldPoint(e)`** acepta eventos con `clientX`/`clientY` (PointerEvent o MouseEvent); la lógica con `getBoundingClientRect()` es la misma.
+- Todas las Tools reciben el mismo tipo de evento (pointer) y funcionan en desktop y táctil.
+- En el canvas (o contenedor) está aplicado **`touch-action: none`** en `src/style.css` para evitar scroll/zoom del navegador sobre el canvas.
+- **UI móvil:** Media queries para el editor; en viewports más pequeños que iPad Mini (ancho o alto ≤743px) hay **toolbar colapsable** (botón expandir/colapsar en `Game.ts`, clase `.main-toolbar.collapsed`); overlay de **rotación** en portrait en móvil pidiendo usar el dispositivo en horizontal. Controles del menú secundario con tamaño táctil adecuado.
 
-**Orden sugerido de implementación:** (1) Pointer Events y normalización, (2) pinch-to-zoom, (3) CSS touch-action, (4) ajustes de UI para pantallas pequeñas. Así se puede probar cada capa sin romper la anterior.
+**Referencia (implementación ya hecha):** Pointer Events y pinch en `Game.ts`; `touch-action: none` y media queries en `src/style.css`; tests de Tools actualizados para eventos tipo pointer (helper `pointerEvent()` donde aplica).
 
 ---
 
@@ -59,7 +59,7 @@ Antes de codificar, leer (desde la raíz del proyecto, carpeta `docs/`):
 
 - **Objetivo:** Que la toolbar y el menú secundario sean usables en pantallas pequeñas (móvil/tablet) sin tapar todo el canvas ni tener botones demasiado pequeños.
 - **Acción:**
-  - **Toolbar:** En viewports estrechos (p. ej. `max-width: 768px` o `48em`), reducir altura si hace falta, aumentar el tamaño táctil de los botones (recomendado mínimo ~44px de lado o área clicable) y, si es necesario, permitir scroll horizontal o agrupar herramientas en un menú colapsable. Usar variables CSS existentes (p. ej. `--toolbar-height`) y media queries aplicadas solo al editor.
+  - **Toolbar:** En viewports estrechos (p. ej. `max-width: 743px` o `max-height: 743px`, más pequeño que iPad Mini), reducir altura si hace falta, aumentar el tamaño táctil de los botones (recomendado mínimo ~44px de lado o área clicable) y, si es necesario, permitir scroll horizontal o agrupar herramientas en un menú colapsable. Usar variables CSS existentes (p. ej. `--toolbar-height`) y media queries aplicadas solo al editor.
   - **Menú secundario (panel de opciones):** En pantallas pequeñas, evitar un panel fijo de 260px que ocupe todo el ancho. Usar un drawer o overlay que se abra desde el botón actual “abrir menú” y se cierre con un botón o tocando fuera, de modo que el canvas sea el foco cuando no se editan propiedades. El botón de abrir menú debe tener tamaño y contraste suficientes para el dedo.
   - **Controles dentro del menú:** Sliders e inputs con altura o padding suficiente (p. ej. mín. 44px) para uso táctil. Revisar `input[type="range"]` y botones del menú.
 - **Criterio:** En ventana estrecha o en dispositivo táctil, se pueden elegir herramientas, abrir/cerrar el panel de opciones y usar los controles sin que el canvas quede inutilizable o los botones sean imposibles de tocar.
@@ -117,6 +117,6 @@ Al implementar, indicar qué archivos se modifican y por qué, y comprobar expl�
 
 **Implementación realizada:** Pointer Events y pinch en `Game.ts` (`setupEvents`, `startPinch`, `updatePinch`, `endPinch`); interfaz `Tool` con `PointerLikeEvent` (alias de `PointerEvent`) en `Tool.ts` y todas las tools; `touch-action: none` y media queries móvil en `src/style.css`; tests de ShapeTool actualizados para usar eventos tipo pointer (helper `pointerEvent()` por compatibilidad con jsdom).
 
-**Orientación en smartphones:** En viewports ≤768px y orientación portrait se muestra un overlay full-screen que pide rotar el dispositivo en horizontal para crear el ejercicio; en landscape el overlay se oculta y el editor se usa con normalidad. Implementado con CSS (`#rotate-overlay`, media queries `(max-width: 768px) and (orientation: portrait/landscape)` en `src/style.css`) y marcado en `editor.html`.
+**Orientación en smartphones:** En viewports más pequeños que iPad Mini (ancho o alto ≤743px) y orientación portrait se muestra un overlay full-screen que pide rotar el dispositivo en horizontal; en landscape el overlay se oculta. Implementado con CSS (`#rotate-overlay`, media queries `(max-width: 743px), (max-height: 743px)` combinadas con `orientation` en `src/style.css`) y marcado en `editor.html`.
 
-**Toolbar colapsable en móvil:** En viewports ≤768px la barra inferior (`#main-toolbar`) puede colapsarse a una tira de 48px en el borde inferior con un botón para expandir/colapsar (`#toolbar-collapse-btn`). La clase `.main-toolbar.collapsed` oculta el contenido (`.main-toolbar-content`) y muestra solo el botón; el toggle se gestiona en `Game.ts` (`setupUI()`).
+**Toolbar colapsable en móvil:** En viewports más pequeños que iPad Mini (ancho o alto ≤743px) la barra inferior (`#main-toolbar`) puede colapsarse a una tira de 48px en el borde inferior con un botón para expandir/colapsar (`#toolbar-collapse-btn`). La clase `.main-toolbar.collapsed` oculta el contenido (`.main-toolbar-content`) y muestra solo el botón; el toggle se gestiona en `Game.ts` (`setupUI()`).

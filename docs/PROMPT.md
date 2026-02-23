@@ -9,10 +9,11 @@ Estás trabajando en "Tactical Board", una aplicación web de pizarra táctica d
 2. **`AI_GUIDELINES.md`:** Reglas estrictas sobre dónde colocar el código. NUNCA poner lógica de interacción (clic, arrastrar) directamente en `Game.ts` si puede ir en una Tool.
 
 **Estado actual del código:**
-- **Core:** `src/core/Game.ts` gestiona el bucle principal, delegación de eventos y el **menú secundario** (panel de opciones del elemento seleccionado en modo edición).
-- **Interacción:** Todo el input (mouse/teclado) pasa por las Tools: `SelectTool`, `ShapeTool`, `PlayerTool`, `ActionTool`, `CameraTool`, `ExerciseTool`, etc.
+- **Core:** `src/core/Game.ts` gestiona el bucle principal, delegación de eventos (Pointer Events) y el **menú secundario** (panel de opciones del elemento seleccionado en modo edición).
+- **Interacción:** Todo el input (mouse/táctil) pasa por las Tools: `SelectTool`, `ShapeTool`, `PlayerTool`, `ActionTool`, `CameraTool`, `ExerciseTool`, etc. La interfaz `Tool` usa `PointerLikeEvent` (ratón y tacto).
 - **Entidades:** `Player`, `BaseShape`, acciones (`Action.ts`), conos, bolas, arcos, etc. Cada entidad tiene `draw` y `containsPoint`.
 - **Animación:** `AnimationManager` interpreta las acciones de cada jugador, usa `waitBefore` para retardos pre-acción y controla estados de bola/jugador durante la reproducción.
+- **Auth:** Autenticación con AWS Cognito (email/contraseña y Google) en `src/auth/client.ts`. Estado de usuario y plan en `src/auth/user.ts`; perfil y límites desde `GET /api/me`. Las llamadas al API llevan JWT en `Authorization`. Página de login en `login.html` / `src/login.ts`.
 
 **Características ya implementadas (referencia):**
 - **Acciones de jugador:** Cada acción tiene en su configuración:

@@ -17,14 +17,16 @@
 |------|------------|
 | Frontend | HTML + TypeScript + Vite (multi-entry por página). Sin React/Vue. |
 | Backend | Node.js, Express, TypeScript. Ubicación: `server/src/`. |
-| API existente | `POST /api/optimize-drill` – optimización de drill; sin auth. |
-| Base de datos | No existe actualmente; hay que añadir persistencia para usuarios y planes. |
+| API | `GET /api/me`, `PATCH /api/me`, `POST /api/optimize-drill`, `PATCH /api/users/:id/plan`. Todas protegidas con JWT (middleware `requireAuth`). |
+| Base de datos | SQLite (desarrollo) en `server/src/database.ts` — tablas `users`, `plans`; seed de planes. En producción se sustituye por RDS (PostgreSQL) o DynamoDB. |
 
-### 1.2 Estado actual de “login” y perfil
+### 1.2 Estado actual de “login” y perfil (post-implementación)
 
-- En todas las páginas hay enlaces `href="#login"` (index.html, perfil.html, marketplace.html, bolsa-de-trabajo.html, comunidad.html, aprendizaje.html). No hay formulario ni flujo real.
-- El perfil (`src/perfil.ts`) lee de localStorage (`easydrill-profile`, `easydrill-profile-name`, etc.). Hay un comentario explícito: *“Cuando exista auth/backend, se cargarán nombre, foto, bio y estadísticas reales.”*
-- El rol (entrenador / club) se guarda en localStorage y se muestra en home y perfil; no hay backend de usuarios.
+- En todas las páginas los enlaces de "Iniciar sesión" apuntan a `login.html` (index, perfil, marketplace, bolsa-de-trabajo, comunidad, aprendizaje).
+- Existe página de login (`login.html`, `src/login.ts`) con formularios de inicio de sesión, registro con email, verificación por código, recuperación de contraseña y botón "Continuar con Google". Cliente Cognito en `src/auth/client.ts`.
+- El perfil (`src/perfil.ts`) carga nombre, avatar, rol, bio y estadísticas desde el backend vía `GET /api/me` cuando hay sesión; permite editar el rol con `PATCH /api/me`. Si no hay sesión, muestra datos de localStorage como fallback.
+- El estado de usuario y plan se gestiona en `src/auth/user.ts`; los límites y features por plan en `src/config/plans.ts`.
+
 
 ### 1.3 Restricciones de arquitectura (respetar siempre)
 

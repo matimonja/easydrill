@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // ───────────────────────────────────────────────
 
 function initAccordions(): void {
-    const isMobile = window.matchMedia('(max-width: 768px)').matches;
+    const isMobile = window.matchMedia('(max-width: 743px)').matches || window.matchMedia('(max-height: 743px)').matches;
 
     document.querySelectorAll('.accordion-toggle').forEach((btn) => {
         btn.addEventListener('click', () => {

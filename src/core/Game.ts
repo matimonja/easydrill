@@ -667,7 +667,7 @@ export class Game implements IGameContext {
     }
 
     private isMobileView(): boolean {
-        return window.matchMedia('(max-width: 768px)').matches;
+        return window.matchMedia('(max-width: 743px)').matches || window.matchMedia('(max-height: 743px)').matches;
     }
 
     private openPropsPanel(title: string): void {
@@ -1075,7 +1075,7 @@ export class Game implements IGameContext {
         const btnOpenMenu = document.getElementById('btn-open-menu');
 
         // En móvil el menú solo se abre de forma explícita (botón), no al seleccionar
-        const isMobile = window.matchMedia('(max-width: 768px)').matches;
+        const isMobile = window.matchMedia('(max-width: 743px)').matches || window.matchMedia('(max-height: 743px)').matches;
         if ((this.selectedEntity || this._zoneSelected) && !isMobile) {
             secondaryMenu?.classList.remove('collapsed');
             btnOpenMenu?.classList.add('hidden');
