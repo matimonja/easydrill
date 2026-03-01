@@ -25,143 +25,169 @@
         <!-- LEFT: Tactical Board Player -->
         <section class="player-column">
             <div class="player-container">
-                <div class="player-placeholder">
-                    <button class="player-play-btn" id="btn-play-drill" aria-label="Reproducir ejercicio">
-                        <i class="fa-solid fa-play"></i>
-                    </button>
-                    <span class="player-label">Pizarra Táctica</span>
+                <div class="player-wrapper" style="position: relative; width: 100%; height: 100%;">
+                    <canvas id="drillPlayerCanvas" style="width: 100%; height: 100%; display: block;"></canvas>
+                    <div class="player-overlay" id="drill-player-overlay"
+                        style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.3); pointer-events: none;">
+                        <button class="player-play-btn" id="btn-play-drill" aria-label="Reproducir ejercicio"
+                            style="pointer-events: auto;">
+                            <i class="fa-solid fa-play"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </section>
 
         <!-- RIGHT: Info Panel -->
         <section class="info-panel" id="info-panel">
-
-            <!-- 1. Header -->
-            <div class="detail-section detail-title-block">
-                <div class="title-row">
-                    <h1 id="exercise-title">Posesión 5v5 con Transiciones</h1>
-                    <a href="editor.html" class="btn-edit" id="btn-edit-exercise">
-                        <i class="fa-solid fa-pen-to-square"></i> Editar Ejercicio
-                    </a>
-                </div>
-                <span class="badge-objective" id="badge-objective">
-                    <i class="fa-solid fa-bullseye"></i> Transiciones rápidas
-                </span>
+            <!-- Not found state (shown when ?id=xxx but document missing) -->
+            <div class="detail-section exercise-not-found hidden" id="exercise-not-found">
+                <p class="not-found-message">Ejercicio no encontrado.</p>
             </div>
 
-            <!-- 2. Metadata Bar -->
-            <div class="detail-section meta-bar" id="meta-bar">
-                <div class="meta-item">
-                    <i class="fa-regular fa-clock"></i>
-                    <span id="meta-duration">15 min</span>
-                </div>
-                <div class="meta-item">
-                    <i class="fa-solid fa-shirt"></i>
-                    <span id="meta-players">5v5</span>
-                </div>
-                <div class="meta-item">
-                    <i class="fa-solid fa-vector-square"></i>
-                    <span id="meta-field">1/2 Cancha</span>
-                </div>
-                <div class="meta-item">
-                    <i class="fa-solid fa-tag"></i>
-                    <span id="meta-category">Sub-14</span>
-                </div>
+            <!-- Mock / read-only view (shown when no id in URL) -->
+            <div id="info-panel-readonly" class="info-panel-mode">
+                <!-- Filled by JS when showing mock -->
             </div>
 
-            <!-- 3. Description -->
-            <div class="detail-section" id="section-description">
-                <h2 class="section-heading">Descripción</h2>
-                <p class="description-text" id="exercise-description">
-                    Ejercicio de posesión en espacio reducido orientado a mejorar las transiciones ataque-defensa. Los
-                    equipos deben mantener la posesión con un máximo de 2 toques y buscar cambios de orientación
-                    rápidos. Al perder la pelota, presión inmediata durante 5 segundos.
-                </p>
-            </div>
-
-            <!-- 4. Materials -->
-            <div class="detail-section" id="section-materials">
-                <h2 class="section-heading">Materiales</h2>
-                <div class="chips-list" id="materials-list">
-                    <span class="chip"><i class="fa-solid fa-cone-striped"></i> 12 Conos</span>
-                    <span class="chip"><i class="fa-solid fa-futbol"></i> 20 Bochas</span>
-                    <span class="chip"><i class="fa-solid fa-shirt"></i> Pecheras (2 colores)</span>
-                    <span class="chip"><i class="fa-solid fa-whistle"></i> Silbato</span>
+            <!-- Editable form (shown when exercise loaded by id) -->
+            <div id="info-panel-form" class="info-panel-mode hidden">
+                <div class="detail-section detail-title-block">
+                    <div class="title-row">
+                        <input type="text" id="input-title" class="input-title" placeholder="Título del ejercicio" />
+                        <div class="title-actions">
+                            <button type="button" class="btn-save" id="btn-save">
+                                <i class="fa-solid fa-floppy-disk"></i> Guardar
+                            </button>
+                            <span id="sync-indicator" class="sync-indicator hidden" title="Estado de sincronización"></span>
+                            <a href="editor.html" class="btn-edit" id="btn-edit-exercise">
+                                <i class="fa-solid fa-pen-to-square"></i> Editar Ejercicio
+                            </a>
+                        </div>
+                    </div>
+                    <input type="text" id="input-objective" class="input-objective"
+                        placeholder="Objetivo (ej. Transiciones rápidas)" />
                 </div>
-            </div>
 
-            <!-- 5. Accordions -->
-            <div class="detail-section" id="section-coaching">
-                <div class="accordion" id="accordion-coaching">
-                    <button class="accordion-toggle" aria-expanded="false">
-                        <span><i class="fa-solid fa-clipboard-check"></i> Puntos Clave de Coaching</span>
-                        <i class="fa-solid fa-chevron-down accordion-icon"></i>
-                    </button>
-                    <div class="accordion-content">
-                        <ul class="coaching-list" id="coaching-list">
-                            <li><i class="fa-solid fa-check"></i> Mantener líneas de pase cortas y diagonales</li>
-                            <li><i class="fa-solid fa-check"></i> Comunicación constante entre jugadores</li>
-                            <li><i class="fa-solid fa-check"></i> Orientación del cuerpo antes de recibir</li>
-                            <li><i class="fa-solid fa-check"></i> Presión coordinada al perder la pelota</li>
-                            <li><i class="fa-solid fa-check"></i> Buscar superioridad numérica en zona de balón</li>
-                        </ul>
+                <div class="detail-section meta-bar form-meta-bar" id="form-meta-bar">
+                    <div class="meta-item">
+                        <i class="fa-regular fa-clock"></i>
+                        <input type="text" id="input-duration" placeholder="Duración" />
+                    </div>
+                    <div class="meta-item">
+                        <i class="fa-solid fa-shirt"></i>
+                        <input type="text" id="input-players" placeholder="Jugadores" />
+                    </div>
+                    <div class="meta-item">
+                        <i class="fa-solid fa-vector-square"></i>
+                        <input type="text" id="input-fieldSize" placeholder="Cancha" />
+                    </div>
+                    <div class="meta-item">
+                        <i class="fa-solid fa-tag"></i>
+                        <input type="text" id="input-category" placeholder="Categoría" />
                     </div>
                 </div>
-            </div>
 
-            <div class="detail-section" id="section-variants">
-                <div class="accordion" id="accordion-variants">
-                    <button class="accordion-toggle" aria-expanded="false">
-                        <span><i class="fa-solid fa-sliders"></i> Variantes y Progresiones</span>
-                        <i class="fa-solid fa-chevron-down accordion-icon"></i>
-                    </button>
-                    <div class="accordion-content">
-                        <div class="variant-block variant-easier">
-                            <h3><i class="fa-solid fa-arrow-down"></i> Para facilitar</h3>
-                            <ul id="variants-easier">
-                                <li>Permitir 3 toques por jugador</li>
-                                <li>Agregar un comodín neutral</li>
-                                <li>Ampliar el espacio de juego</li>
-                            </ul>
-                        </div>
-                        <div class="variant-block variant-harder">
-                            <h3><i class="fa-solid fa-arrow-up"></i> Para dificultar</h3>
-                            <ul id="variants-harder">
-                                <li>Reducir a 1 toque</li>
-                                <li>Achicar el espacio</li>
-                                <li>Limitar tiempo de posesión a 10 segundos</li>
-                            </ul>
+                <div class="detail-section" id="section-description">
+                    <h2 class="section-heading">Descripción</h2>
+                    <textarea id="input-description" class="input-textarea" rows="4"
+                        placeholder="Descripción del ejercicio"></textarea>
+                </div>
+
+                <div class="detail-section" id="section-materials">
+                    <h2 class="section-heading">Materiales</h2>
+                    <div class="chips-list editable-list" id="materials-list"></div>
+                    <div class="list-add-row">
+                        <input type="text" id="input-material-new" class="list-input" placeholder="Añadir material" />
+                        <button type="button" class="btn-add-item" id="btn-add-material" aria-label="Añadir material"><i
+                                class="fa-solid fa-plus"></i></button>
+                    </div>
+                </div>
+
+                <div class="detail-section" id="section-coaching">
+                    <div class="accordion" id="accordion-coaching">
+                        <button type="button" class="accordion-toggle" aria-expanded="false">
+                            <span><i class="fa-solid fa-clipboard-check"></i> Puntos Clave de Coaching</span>
+                            <i class="fa-solid fa-chevron-down accordion-icon"></i>
+                        </button>
+                        <div class="accordion-content">
+                            <ul class="editable-item-list" id="coaching-list"></ul>
+                            <div class="list-add-row">
+                                <input type="text" id="input-coaching-new" class="list-input"
+                                    placeholder="Añadir punto" />
+                                <button type="button" class="btn-add-item" id="btn-add-coaching" aria-label="Añadir"><i
+                                        class="fa-solid fa-plus"></i></button>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- 6. Footer -->
-            <div class="detail-section" id="section-success">
-                <div class="success-box" id="success-box">
-                    <i class="fa-solid fa-trophy"></i>
-                    <div>
-                        <strong>Criterio de éxito</strong>
-                        <p id="success-text">El equipo completa 8 pases consecutivos antes de buscar el cambio de
-                            orientación, manteniendo la presión post-pérdida durante al menos 5 segundos.</p>
+                <div class="detail-section" id="section-variants">
+                    <div class="accordion" id="accordion-variants">
+                        <button type="button" class="accordion-toggle" aria-expanded="false">
+                            <span><i class="fa-solid fa-sliders"></i> Variantes y Progresiones</span>
+                            <i class="fa-solid fa-chevron-down accordion-icon"></i>
+                        </button>
+                        <div class="accordion-content">
+                            <div class="variant-block variant-easier">
+                                <h3><i class="fa-solid fa-arrow-down"></i> Para facilitar</h3>
+                                <ul class="editable-item-list" id="variants-easier-list"></ul>
+                                <div class="list-add-row">
+                                    <input type="text" id="input-variant-easier-new" class="list-input"
+                                        placeholder="Añadir variante" />
+                                    <button type="button" class="btn-add-item" id="btn-add-variant-easier"
+                                        aria-label="Añadir"><i class="fa-solid fa-plus"></i></button>
+                                </div>
+                            </div>
+                            <div class="variant-block variant-harder">
+                                <h3><i class="fa-solid fa-arrow-up"></i> Para dificultar</h3>
+                                <ul class="editable-item-list" id="variants-harder-list"></ul>
+                                <div class="list-add-row">
+                                    <input type="text" id="input-variant-harder-new" class="list-input"
+                                        placeholder="Añadir variante" />
+                                    <button type="button" class="btn-add-item" id="btn-add-variant-harder"
+                                        aria-label="Añadir"><i class="fa-solid fa-plus"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detail-section" id="section-success">
+                    <div class="success-box">
+                        <i class="fa-solid fa-trophy"></i>
+                        <div>
+                            <strong>Criterio de éxito</strong>
+                            <textarea id="input-successCriteria" class="input-textarea input-textarea-small" rows="2"
+                                placeholder="Criterio de éxito"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detail-section" id="section-tags">
+                    <h2 class="section-heading">Tags</h2>
+                    <div class="tags-editor">
+                        <div class="tags-cloud" id="tags-list"></div>
+                        <div class="tag-add-row">
+                            <input type="text" id="input-tag-label" class="list-input"
+                                placeholder="Etiqueta (ej. #posesión)" />
+                            <select id="input-tag-color">
+                                <option value="blue">Azul</option>
+                                <option value="red">Rojo</option>
+                                <option value="green">Verde</option>
+                                <option value="orange">Naranja</option>
+                                <option value="violet">Violeta</option>
+                            </select>
+                            <button type="button" class="btn-add-item" id="btn-add-tag" aria-label="Añadir tag"><i
+                                    class="fa-solid fa-plus"></i></button>
+                        </div>
                     </div>
                 </div>
             </div>
-
-            <div class="detail-section" id="section-tags">
-                <div class="tags-cloud" id="tags-cloud">
-                    <a href="#" class="tag tag-blue">#posesión</a>
-                    <a href="#" class="tag tag-red">#transiciones</a>
-                    <a href="#" class="tag tag-green">#pressing</a>
-                    <a href="#" class="tag tag-orange">#espacio-reducido</a>
-                    <a href="#" class="tag tag-violet">#sub14</a>
-                    <a href="#" class="tag tag-blue">#5v5</a>
-                </div>
-            </div>
-
         </section>
     </main>
+
+    <div id="toast" class="toast hidden" aria-live="polite"></div>
 
     <script type="module" src="/src/ejercicio.ts"></script>
 </body>

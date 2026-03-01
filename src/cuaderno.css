@@ -1,0 +1,73 @@
+/* cuaderno.css - Estilos específicos para Tu Cuaderno */
+
+/* Reutilizamos marketplace.css para la grilla y filtros,
+   acá sumamos cosas particulares de las acciones del cuaderno */
+
+.cuaderno-action-edit {
+    color: var(--home-muted);
+    transition: color 0.2s;
+}
+
+.cuaderno-action-edit:hover {
+    color: var(--marker-blue);
+}
+
+.cuaderno-action-delete {
+    color: var(--home-muted);
+    background: none;
+    border: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: color 0.2s;
+    padding: 0;
+    margin-left: auto;
+}
+
+.cuaderno-action-delete:hover {
+    color: #ef4444;
+    /* red */
+}
+
+/* Modal Simple */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-overlay.hidden {
+    display: none;
+}
+
+.modal-content {
+    background: var(--home-card);
+    border: 2px solid var(--home-border);
+    border-radius: 14px;
+    padding: 2rem;
+    width: 90%;
+    animation: modalIn 0.2s ease-out;
+}
+
+@keyframes modalIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

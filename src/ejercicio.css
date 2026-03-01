@@ -196,8 +196,9 @@ body.detail-page {
 }
 
 /* hide empty sections via JS */
-.detail-section.hidden {
-    display: none;
+.detail-section.hidden,
+.hidden {
+    display: none !important;
 }
 
 /* --- 1. Title Block --- */
@@ -571,6 +572,307 @@ body.detail-page {
     background: var(--marker-soft-violet);
 }
 
+/* ============================================================
+   EDITABLE FORM (detail page when exercise loaded by id)
+   ============================================================ */
+.title-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.sync-indicator {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+}
+
+.sync-indicator.hidden {
+    display: none !important;
+}
+
+.btn-save {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1rem;
+    background: var(--marker-green);
+    color: #fff;
+    border: 2px solid var(--marker-green);
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+}
+
+.btn-save:hover {
+    background: #15803d;
+    border-color: #15803d;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
+}
+
+.input-title {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    padding: 0.25rem 0;
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--home-text);
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+    border: none;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.input-title:hover,
+.input-title:focus {
+    border-bottom-color: var(--home-border);
+}
+
+.input-objective {
+    display: block;
+    width: 100%;
+    margin-top: 0.5rem;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.9rem;
+    color: var(--home-muted);
+    border: 1px solid var(--home-border);
+    border-radius: 8px;
+    background: var(--home-surface);
+    outline: none;
+}
+
+.input-objective:focus {
+    border-color: var(--marker-blue);
+}
+
+.form-meta-bar.meta-bar .meta-item input {
+    flex: 1;
+    min-width: 0;
+    padding: 0;
+    margin: 0;
+    border: none;
+    background: transparent;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--home-text);
+    outline: none;
+}
+
+.input-textarea {
+    display: block;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+    color: var(--home-text);
+    border: 2px solid var(--home-border);
+    border-radius: 10px;
+    background: var(--home-card);
+    resize: vertical;
+    outline: none;
+    font-family: inherit;
+    line-height: 1.6;
+}
+
+.input-textarea:focus {
+    border-color: var(--marker-blue);
+}
+
+.input-textarea-small {
+    margin-top: 0.5rem;
+    min-height: 60px;
+}
+
+.list-add-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+
+.list-input {
+    flex: 1;
+    min-width: 0;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9rem;
+    border: 1px solid var(--home-border);
+    border-radius: 8px;
+    background: var(--home-surface);
+    outline: none;
+}
+
+.list-input:focus {
+    border-color: var(--marker-blue);
+}
+
+.btn-add-item {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 2px solid var(--marker-blue);
+    background: var(--marker-soft-blue);
+    color: var(--marker-blue);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-add-item:hover {
+    background: var(--marker-blue);
+    color: #fff;
+}
+
+.editable-item-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.editable-list-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.editable-list-item .list-item-input {
+    flex: 1;
+    min-width: 0;
+    padding: 0.45rem 0.65rem;
+    font-size: 0.9rem;
+    border: 1px solid var(--home-border);
+    border-radius: 6px;
+    background: var(--home-surface);
+    outline: none;
+}
+
+.btn-remove-item {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: none;
+    background: var(--home-border);
+    color: var(--home-muted);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-remove-item:hover {
+    background: var(--marker-red);
+    color: #fff;
+}
+
+.chip-editable {
+    position: relative;
+    padding-right: 1.5rem;
+}
+
+.chip-remove {
+    margin-left: 0.25rem;
+    padding: 0.15rem;
+    border: none;
+    background: transparent;
+    color: var(--home-muted);
+    cursor: pointer;
+    border-radius: 4px;
+    line-height: 1;
+    vertical-align: middle;
+}
+
+.chip-remove:hover {
+    background: rgba(220, 38, 38, 0.2);
+    color: var(--marker-red);
+}
+
+.tag-editable {
+    padding-right: 1.5rem;
+}
+
+.tag-editable .chip-remove {
+    margin-left: 0.2rem;
+}
+
+.tags-editor .tag-add-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.tag-add-row .list-input {
+    flex: 1;
+    min-width: 120px;
+}
+
+.tag-add-row select {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9rem;
+    border: 1px solid var(--home-border);
+    border-radius: 8px;
+    background: var(--home-surface);
+    color: var(--home-text);
+    outline: none;
+}
+
+.success-box .input-textarea {
+    margin-top: 0.5rem;
+}
+
+/* Not found & toast */
+.not-found-message {
+    font-size: 1.1rem;
+    color: var(--home-muted);
+    margin: 0;
+    padding: 2rem;
+    text-align: center;
+}
+
+.toast {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 0.75rem 1.5rem;
+    background: var(--home-text);
+    color: var(--home-surface);
+    font-size: 0.9rem;
+    font-weight: 600;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    transition: opacity 0.25s;
+}
+
+.mock-title {
+    margin: 0;
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--home-text);
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+}
 
 /* ============================================================
    MOBILE RESPONSIVE (≤ 768px)

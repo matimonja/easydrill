@@ -30,27 +30,6 @@ body {
   position: relative;
 }
 
-.editor-back-home {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  z-index: 20;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  background: rgba(0, 0, 0, 0.6);
-  color: #eee;
-  border-radius: 8px;
-  font-size: 0.85rem;
-  text-decoration: none;
-}
-
-.editor-back-home:hover {
-  background: rgba(0, 0, 0, 0.8);
-  color: #fff;
-}
-
 /* --- Game Container --- */
 #game-container {
   position: relative;
@@ -177,6 +156,20 @@ body {
 .tool-btn.active {
   background: var(--accent-color);
   border-color: #60a5fa;
+}
+
+.sync-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.sync-indicator.hidden {
+  display: none;
 }
 
 .placeholder-msg {
@@ -552,19 +545,23 @@ body {
   }
 
   .main-toolbar {
+    order: -1;
     padding: 4px;
     overflow-x: auto;
     overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
     transition: height 0.25s ease, min-height 0.25s ease;
+    border-top: none;
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
   }
 
-  /* Toolbar colapsada: solo barra inferior con botón expandir */
+  /* Toolbar colapsada: barra superior con botón expandir */
   .main-toolbar.collapsed {
     height: 40px !important;
     min-height: 40px;
     padding: 0;
-    padding-bottom: env(safe-area-inset-bottom, 0);
+    padding-top: env(safe-area-inset-top, 0);
     align-items: center;
     justify-content: center;
   }

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tu Cuaderno – EasyDrill</title>
+    <link rel="stylesheet" href="/src/home.css" />
+    <link rel="stylesheet" href="/src/marketplace.css" />
+    <link rel="stylesheet" href="/src/cuaderno.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+</head>
+
+<body class="marketplace-page cuaderno-page">
+    <header class="home-header">
+        <a href="index.html" class="home-logo">EasyDrill</a>
+        <nav class="home-nav">
+            <a href="perfil.html">Tu perfil</a>
+            <a href="marketplace.html">Marketplace</a>
+            <a href="index.html#comunidad">Comunidad</a>
+            <a href="aprendizaje.html">Aprendizaje</a>
+            <a href="setup.html">Abrir pizarrón</a>
+            <a href="bolsa-de-trabajo.html">Bolsa de trabajo</a>
+            <a href="login.html" class="home-nav-login">Iniciar sesión</a>
+        </nav>
+    </header>
+
+    <main class="marketplace-main">
+        <section class="page-hero">
+            <h1>Tu Cuaderno de Ejercicios</h1>
+            <p>Todos tus diseños, planillas y tácticas guardadas de forma segura.</p>
+        </section>
+
+        <div class="marketplace-layout">
+            <!-- Filtros / Buscador lateral (Reutilizando clases de marketplace) -->
+            <aside class="marketplace-filters">
+                <div class="filter-group">
+                    <label class="filter-label">Buscar ejercicio</label>
+                    <div class="search-wrap">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="search-input" class="search-input"
+                            placeholder="Ej: Posesión en espacio..." />
+                    </div>
+                </div>
+                <button type="button" class="filter-reset" id="btn-reset-filters">Limpiar búsqueda</button>
+            </aside>
+
+            <!-- Contenido Principal -->
+            <section class="marketplace-content">
+                <div class="marketplace-toolbar" style="margin-bottom: 2rem;">
+                    <span class="marketplace-count" id="exercise-count-msg">Cargando ejercicios...</span>
+                    <a href="setup.html" class="home-cta" style="padding: 0.6rem 1.2rem; font-size: 0.95rem;">
+                        <i class="fa-solid fa-plus"></i> Crear Nuevo Ejercicio
+                    </a>
+                </div>
+
+                <div class="marketplace-grid" id="cuaderno-grid">
+                    <!-- Los ejercicios se inyectan acá vía JS -->
+                </div>
+
+                <div class="marketplace-empty hidden" id="cuaderno-empty">
+                    <i class="fa-solid fa-book-open"></i>
+                    <p>Aún no tenés ejercicios en tu cuaderno o no coinciden con la búsqueda.</p>
+                    <a href="setup.html" class="home-cta-secondary" style="display:inline-block; margin-top:1rem;">Crear
+                        tu primer ejercicio</a>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Modal Confirmación Eliminar -->
+    <div id="delete-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
+            <h3 style="color: var(--home-text); font-size: 1.25rem; margin-bottom: 1rem;">¿Eliminar este ejercicio?</h3>
+            <p style="color: var(--home-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">
+                Esta acción no se puede deshacer. Se borrará la descripción y el estado de la pizarra.
+            </p>
+            <div style="display: flex; gap: 1rem; justify-content: center;">
+                <button id="btn-cancel-delete" class="home-cta-secondary"
+                    style="width: auto; padding: 0.5rem 1rem;">Cancelar</button>
+                <button id="btn-confirm-delete" class="home-cta"
+                    style="background: #ef4444; border-color: #ef4444; width: auto; padding: 0.5rem 1rem;">Eliminar</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="/src/cuaderno.ts"></script>
+</body>
+
+</html>

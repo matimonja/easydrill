@@ -16,6 +16,7 @@ export default defineConfig({
         aprendizaje: 'aprendizaje.html',
         comunidad: 'comunidad.html',
         perfil: 'perfil.html',
+        cuaderno: 'cuaderno.html',
         ejercicio: 'ejercicio.html',
         login: 'login.html',
       },

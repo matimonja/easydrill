@@ -5,7 +5,8 @@
 
 import { initNavAuth } from './auth/nav-auth';
 import { initAuth, getProfile, getUserState, isLoggedIn, fetchWithAuth, syncProfile } from './auth/user';
-import { getPlanName, type PlanId } from './config/plans';
+import { getPlanName } from './config/plans';
+import { ExerciseStorage } from './persistence/ExerciseStorage';
 
 const ROLE_LABELS: Record<string, string> = {
   entrenador: 'Entrenador',
@@ -33,8 +34,11 @@ async function initPerfil(): Promise<void> {
       if (bioEl) bioEl.textContent = profile.bio || 'Sin presentación aún.';
     }
 
-    if (state?.usage) {
-      if (statEjercicios) statEjercicios.textContent = String(state.usage.exercises_saved);
+    if (statEjercicios) {
+      const fromServer = state?.usage?.exercises_saved ?? 0;
+      const storage = new ExerciseStorage();
+      const localCount = storage.getExerciseList().length;
+      statEjercicios.textContent = String(fromServer > 0 ? fromServer : localCount);
     }
 
     // Show plan badge
@@ -86,8 +90,9 @@ async function initPerfil(): Promise<void> {
       if (saved) bioEl.textContent = saved;
     }
     if (statEjercicios) {
-      const n = localStorage.getItem('easydrill-stat-ejercicios');
-      statEjercicios.textContent = n ?? '0';
+      const storage = new ExerciseStorage();
+      const count = storage.getExerciseList().length;
+      statEjercicios.textContent = String(count);
     }
     if (statForos) {
       const n = localStorage.getItem('easydrill-stat-foros');

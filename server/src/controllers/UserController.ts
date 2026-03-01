@@ -23,11 +23,11 @@ export class UserController {
         }
 
         try {
-            let user = findUserBySub(req.user.sub);
+            let user = await findUserBySub(req.user.sub);
 
             // First login — create user
             if (!user) {
-                user = createUser({
+                user = await createUser({
                     cognitoSub: req.user.sub,
                     email: req.user.email,
                     displayName: req.user.name || '',
@@ -35,8 +35,8 @@ export class UserController {
                 });
             }
 
-            const plan = getPlan(user.plan_id);
-            const exerciseCount = getUserExerciseCount(user.id);
+            const plan = await getPlan(user.plan_id);
+            const exerciseCount = await getUserExerciseCount(user.id);
 
             res.json({
                 user: {
@@ -82,7 +82,7 @@ export class UserController {
         }
 
         try {
-            const user = findUserBySub(req.user.sub);
+            const user = await findUserBySub(req.user.sub);
             if (!user) {
                 res.status(404).json({ error: 'User not found' });
                 return;
@@ -96,7 +96,7 @@ export class UserController {
                 return;
             }
 
-            const updated = updateUser(user.id, {
+            const updated = await updateUser(user.id, {
                 ...(role !== undefined && { role }),
                 ...(display_name !== undefined && { display_name }),
                 ...(bio !== undefined && { bio }),
@@ -137,13 +137,13 @@ export class UserController {
                 return;
             }
 
-            const plan = getPlan(planId);
+            const plan = await getPlan(planId);
             if (!plan) {
                 res.status(400).json({ error: `Plan "${planId}" not found` });
                 return;
             }
 
-            const updated = updateUserPlan(id, planId);
+            const updated = await updateUserPlan(id, planId);
             if (!updated) {
                 res.status(404).json({ error: 'User not found' });
                 return;

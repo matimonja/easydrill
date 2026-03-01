@@ -36,6 +36,9 @@ Copiar `.env.example` a `.env` en la raíz del proyecto y, si hace falta, en `se
 - `COGNITO_USER_POOL_ID` — Mismo User Pool ID (para validar JWT)
 - `COGNITO_REGION` — Misma región
 - `DATABASE_PATH` — Ruta del archivo SQLite (opcional; por defecto `./data/easydrill.db`)
+- `DATABASE_URL` — Si está definido, se usa PostgreSQL (p. ej. RDS) en lugar de SQLite
+
+Más detalle (RDS, SSL, scripts): ver [server/README.md](server/README.md).
 
 ## Desarrollo
 

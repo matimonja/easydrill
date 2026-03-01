@@ -1,13 +1,17 @@
 import { Camera } from './Camera';
 import { Field } from '../entities/Field';
 import { Player } from '../entities/Player';
+// @ts-ignore
 import { BaseShape, RectangleShape, EllipseShape, TriangleShape, LineShape, FreehandShape } from '../entities/Shape';
+// @ts-ignore
 import { BaseAction, ActionType, RunAction, PassAction, DribbleAction, ShootAction, TackleAction, TurnAction } from '../entities/Action';
 import { Cone, Ball, ConeGroup } from '../entities/ExerciseObjects';
 import { Goal } from '../entities/Goal';
 import { CommandManager } from './CommandManager';
 import { AnimationManager } from './AnimationManager';
+// @ts-ignore
 import { RemoveEntityCommand, AddEntityCommand, MoveEntityCommand, RemoveActionChainCommand } from './Commands';
+// @ts-ignore
 import { IGameContext, ToolType, ShapeType, Entity } from './Interfaces';
 import { ExerciseZoneConfig } from './ExerciseZoneConfig';
 import { ExerciseStorage } from '../persistence/ExerciseStorage';
@@ -65,6 +69,7 @@ export class Game implements IGameContext {
     private pinchInitialZoom: number = 1;
 
     // Persistence
+    public loadPromise: Promise<void> | null = null;
     private exerciseId: string;
     private exerciseStorage: ExerciseStorage;
     private exerciseMetadata: ExerciseMetadata = { title: 'Sin título' };
@@ -114,7 +119,9 @@ export class Game implements IGameContext {
 
         // Load exercise if ID was provided
         if (exerciseId) {
-            this.loadExercise(exerciseId);
+            this.loadPromise = this.loadExercise(exerciseId);
+        } else {
+            this.loadPromise = Promise.resolve();
         }
     }
 
@@ -381,53 +388,53 @@ export class Game implements IGameContext {
 
     // --- UI Management ---
 
-    private setupUI() {
+    public setMode(mode: AppMode) {
+        this.currentMode = mode;
+
         const btnModeEdit = document.getElementById('btn-mode-edit');
         const btnModePlay = document.getElementById('btn-mode-play');
         const editToolsPanel = document.getElementById('edit-tools-panel');
         const playToolsPanel = document.getElementById('play-tools-panel');
 
-        const switchMode = (mode: AppMode) => {
-            this.currentMode = mode;
+        if (mode === 'edit') {
+            // Stop animation and reset positions when entering Edit Mode
+            this.animationManager.stop();
+            this.updateSceneState();
 
-            if (mode === 'edit') {
-                // Stop animation and reset positions when entering Edit Mode
-                this.animationManager.stop();
-                this.updateSceneState();
+            btnModeEdit?.classList.add('active');
+            btnModePlay?.classList.remove('active');
+            editToolsPanel?.classList.remove('hidden');
+            playToolsPanel?.classList.add('hidden');
 
-                btnModeEdit?.classList.add('active');
-                btnModePlay?.classList.remove('active');
-                editToolsPanel?.classList.remove('hidden');
-                playToolsPanel?.classList.add('hidden');
+            // Show Scene Controls in Edit Mode
+            const sceneSection = document.getElementById('section-scenes');
+            if (sceneSection) sceneSection.style.display = 'flex';
 
-                // Show Scene Controls in Edit Mode
-                const sceneSection = document.getElementById('section-scenes');
-                if (sceneSection) sceneSection.style.display = 'flex';
+            // Restore Edit Tool
+            this.setTool('select');
+            this.updateSelectionUI();
+        } else {
+            btnModeEdit?.classList.remove('active');
+            btnModePlay?.classList.add('active');
+            editToolsPanel?.classList.add('hidden');
+            playToolsPanel?.classList.remove('hidden');
 
-                // Restore Edit Tool
-                this.setTool('select');
-                this.updateSelectionUI();
-            } else {
-                btnModeEdit?.classList.remove('active');
-                btnModePlay?.classList.add('active');
-                editToolsPanel?.classList.add('hidden');
-                playToolsPanel?.classList.remove('hidden');
+            // Hide Scene Controls in Play Mode
+            const sceneSection = document.getElementById('section-scenes');
+            if (sceneSection) sceneSection.style.display = 'none';
 
-                // Hide Scene Controls in Play Mode
-                const sceneSection = document.getElementById('section-scenes');
-                if (sceneSection) sceneSection.style.display = 'none';
+            this.selectEntity(null);
+            this.updatePropertiesPanel(null);
 
-                this.selectEntity(null);
-                this.updatePropertiesPanel(null);
+            // In Play Mode, we effectively use the Camera Tool with Pan enabled
+            this.setTool('camera');
+            (this.tools.get('camera') as CameraTool).setPanEnabled(true);
+        }
+    }
 
-                // In Play Mode, we effectively use the Camera Tool with Pan enabled
-                this.setTool('camera');
-                (this.tools.get('camera') as CameraTool).setPanEnabled(true);
-            }
-        };
-
-        btnModeEdit?.addEventListener('click', () => switchMode('edit'));
-        btnModePlay?.addEventListener('click', () => switchMode('play'));
+    private setupUI() {
+        document.getElementById('btn-mode-edit')?.addEventListener('click', () => this.setMode('edit'));
+        document.getElementById('btn-mode-play')?.addEventListener('click', () => this.setMode('play'));
 
         // Save & Settings buttons
         document.getElementById('btn-save')?.addEventListener('click', () => {
@@ -656,8 +663,8 @@ export class Game implements IGameContext {
         `;
         document.body.appendChild(overlay);
 
-        document.getElementById('confirm-cancel')!.addEventListener('click', () => overlay.remove());
-        document.getElementById('confirm-ok')!.addEventListener('click', () => {
+        document.getElementById('confirm-cancel')?.addEventListener('click', () => overlay.remove());
+        document.getElementById('confirm-ok')?.addEventListener('click', () => {
             overlay.remove();
             onConfirm();
         });

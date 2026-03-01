@@ -4,7 +4,7 @@
   "description": "BFF for Tactical Board Drill Optimization",
   "main": "dist/index.js",
   "scripts": {
-    "start": "node dist/index.js",
+    "start": "node dist/server/src/index.js",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc"
   },
@@ -16,7 +16,8 @@
     "express": "^4.18.2",
     "graphlib": "^2.1.8",
     "jsonwebtoken": "^9.0.3",
-    "jwks-rsa": "^3.2.2"
+    "jwks-rsa": "^3.2.2",
+    "pg": "^8.19.0"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
@@ -26,6 +27,7 @@
     "@types/graphlib": "^2.1.8",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20.4.5",
+    "@types/pg": "^8.18.0",
     "concurrently": "^9.2.1",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.1.6"

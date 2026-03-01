@@ -1,5 +1,6 @@
 import { Game } from './core/Game';
 import { loadZoneConfig } from './core/ExerciseZoneConfig';
+import { initSyncIndicator } from './persistence/SyncIndicator';
 
 window.addEventListener('DOMContentLoaded', () => {
   const zoneConfig = loadZoneConfig();
@@ -7,5 +8,6 @@ window.addEventListener('DOMContentLoaded', () => {
   const exerciseId = params.get('id') || undefined;
   const game = new Game('gameCanvas', zoneConfig ?? undefined, exerciseId);
   game.start();
+  initSyncIndicator();
 });
 

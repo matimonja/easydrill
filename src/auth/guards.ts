@@ -6,22 +6,26 @@
 
 import { getPlanId, getUserState } from './user';
 import { isWithinLimit, can, getPlanName, type PlanLimits, type PlanFeatures } from '../config/plans';
+import { ExerciseStorage } from '../persistence/ExerciseStorage';
 
 // ─── Exercise Limit Check ────────────────────────────────────────
 
 /**
  * Check if the user can save another exercise.
+ * Uses the higher of server count or local count to avoid desyncs.
  * Returns { allowed: true } or { allowed: false, message: string }.
  */
 export function checkExerciseLimit(): { allowed: boolean; message?: string } {
     const state = getUserState();
     if (!state) {
-        // Not logged in — allow (localStorage-only, no limits)
         return { allowed: true };
     }
 
     const planId = getPlanId();
-    const currentCount = state.usage?.exercises_saved ?? 0;
+    const serverCount = state.usage?.exercises_saved ?? 0;
+    const storage = new ExerciseStorage();
+    const localCount = storage.getExerciseList().length;
+    const currentCount = Math.max(serverCount, localCount);
 
     if (isWithinLimit(planId, 'max_exercises_saved', currentCount)) {
         return { allowed: true };
