@@ -4,13 +4,87 @@
 <head>
   <meta charset="UTF-8" />
   <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>Pizarra Táctica | EasyDrill</title>
   <link rel="stylesheet" href="/src/style.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 </head>
 
 <body>
+  <!-- Seccion 1: Setup (ocupa 100dvh, se oculta tras scroll al editor) -->
+  <div id="setup-screen">
+    <div class="setup-container">
+      <div class="setup-header">
+        <h1><i class="fa-solid fa-wand-magic-sparkles"></i> Nuevo Ejercicio</h1>
+        <p>Seleccioná la zona de la cancha donde dibujar</p>
+      </div>
+
+      <div class="zone-cards">
+        <button class="zone-card active" data-preset="full" id="zone-full">
+          <div class="zone-card-icon">
+            <div class="mini-field">
+              <div class="zone-highlight zone-full"></div>
+            </div>
+          </div>
+          <span class="zone-card-label">Toda la cancha</span>
+        </button>
+
+        <button class="zone-card" data-preset="half" id="zone-half">
+          <div class="zone-card-icon">
+            <div class="mini-field">
+              <div class="zone-highlight zone-half"></div>
+            </div>
+          </div>
+          <span class="zone-card-label">Media cancha</span>
+        </button>
+
+        <button class="zone-card" data-preset="quarter" id="zone-quarter">
+          <div class="zone-card-icon">
+            <div class="mini-field">
+              <div class="zone-highlight zone-quarter"></div>
+            </div>
+          </div>
+          <span class="zone-card-label">Fondo a 25m</span>
+        </button>
+
+        <button class="zone-card" data-preset="area" id="zone-area">
+          <div class="zone-card-icon">
+            <div class="mini-field">
+              <div class="zone-highlight zone-area"></div>
+            </div>
+          </div>
+          <span class="zone-card-label">Área</span>
+        </button>
+
+        <button class="zone-card" data-preset="custom" id="zone-custom">
+          <div class="zone-card-icon">
+            <div class="mini-field">
+              <div class="zone-highlight zone-custom"></div>
+            </div>
+          </div>
+          <span class="zone-card-label">Espacio custom</span>
+        </button>
+      </div>
+
+      <div class="custom-zone-section" id="custom-section">
+        <span class="section-label">Dibujá un rectángulo sobre la cancha para elegir la zona</span>
+        <div class="custom-canvas-wrapper">
+          <canvas id="zone-preview-canvas"></canvas>
+        </div>
+      </div>
+
+      <button class="setup-cta" id="btn-start">
+        <i class="fa-solid fa-pen-ruler"></i>
+        Comenzar a dibujar
+      </button>
+
+      <div class="setup-back">
+        <a href="index.html"><i class="fa-solid fa-arrow-left"></i> Volver al inicio</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Seccion 2: Editor -->
   <div id="app">
     <!-- Overlay en portrait (móvil): pedir rotar a horizontal -->
     <div id="rotate-overlay" class="rotate-overlay" aria-hidden="true">

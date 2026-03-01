@@ -1,6 +1,6 @@
 /**
  * Setup Screen – Allows the user to pick an exercise zone before entering the editor.
- * Manages the preset cards, custom-zone drawing canvas, and navigation to editor.html.
+ * Manages the preset cards, custom-zone drawing canvas, and confirmation callback.
  *
  * Custom zone interaction modes:
  *  1. Draw:  drag on empty canvas to create a new rectangle
@@ -13,8 +13,11 @@ import {
     ZoneRect,
     ExerciseZoneConfig,
     ZONE_PRESETS,
-    saveZoneConfig,
 } from './core/ExerciseZoneConfig';
+
+export interface ZoneSetupOptions {
+    onConfirm: (config: ExerciseZoneConfig) => void;
+}
 
 /** Size (in world units) of the corner resize handles */
 const HANDLE_SIZE = 14;
@@ -29,9 +32,10 @@ const HANDLE_FILL = '#f97316';
 type InteractionMode = 'draw' | 'move' | 'resize';
 type HandleCorner = 'tl' | 'tr' | 'bl' | 'br';
 
-class ZoneSetupScreen {
+export class ZoneSetupScreen {
     private selectedPreset: ZonePreset = 'full';
     private customZone: ZoneRect | null = null;
+    private onConfirm: (config: ExerciseZoneConfig) => void;
 
     // Canvas for custom drawing
     private canvas: HTMLCanvasElement;
@@ -46,7 +50,8 @@ class ZoneSetupScreen {
     /** Snapshot of the zone rect at the start of a move or resize */
     private zoneSnapshot: ZoneRect | null = null;
 
-    constructor() {
+    constructor(options: ZoneSetupOptions) {
+        this.onConfirm = options.onConfirm;
         this.canvas = document.getElementById('zone-preview-canvas') as HTMLCanvasElement;
         this.ctx = this.canvas.getContext('2d')!;
 
@@ -405,7 +410,6 @@ class ZoneSetupScreen {
             zone = ZONE_PRESETS[this.selectedPreset];
         }
 
-        // Auto-rotate when zone is taller than wide (better screen usage)
         const shouldRotate = zone.h > zone.w;
 
         const config: ExerciseZoneConfig = {
@@ -414,12 +418,6 @@ class ZoneSetupScreen {
             rotate: shouldRotate,
         };
 
-        saveZoneConfig(config);
-        window.location.href = 'editor.html';
+        this.onConfirm(config);
     }
 }
-
-// --- Init ---
-window.addEventListener('DOMContentLoaded', () => {
-    new ZoneSetupScreen();
-});

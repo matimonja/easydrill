@@ -1,0 +1,13 @@
+import"./modulepreload-polyfill-3cfb730f.js";import{i as s}from"./nav-auth-1aae0094.js";import"./user-58edc8be.js";import"./client-c375c8af.js";const c=[{id:"1",title:"¿Cómo diagramar una salida desde el arco con 3 defensores?",excerpt:"Estoy armando una sesión de construcción y me cuesta organizar los apoyos…",author:"Usuario",date:"2024-01-10",replies:3,category:"ejercicios"},{id:"2",title:"Rondo 4v2: variantes para subir la intensidad",excerpt:"Comparto cómo le fui sumando restricciones para que no se acomoden.",author:"Usuario",date:"2024-01-08",replies:7,category:"ejercicios"},{id:"3",title:"Exportar ejercicio como imagen o PDF",excerpt:"Sería muy útil poder guardar el pizarrón como imagen para mandar por WhatsApp o imprimir.",author:"Usuario",date:"2024-01-12",replies:12,category:"funcionalidades"},{id:"4",title:"Timeline de la jugada (reproducción por pasos)",excerpt:"Que se pueda pausar o ir paso a paso en la animación para explicar en la práctica.",author:"Usuario",date:"2024-01-09",replies:5,category:"funcionalidades"},{id:"5",title:"Bienvenida y primeras impresiones",excerpt:"Hola a todos, probé EasyDrill esta semana y quería contar que…",author:"Usuario",date:"2024-01-14",replies:2,category:"general"}];function o(e){const a=document.createElement("div");return a.textContent=e,a.innerHTML}function d(e){return`
+    <li>
+      <a href="login.html" class="comunidad-thread" data-id="${e.id}" title="Iniciar sesión para ver el hilo">
+        <div class="comunidad-thread-title">${o(e.title)}</div>
+        <p class="comunidad-thread-excerpt" style="margin:0 0 0.35rem; font-size:0.9rem; color:var(--home-muted);">${o(e.excerpt)}</p>
+        <div class="comunidad-thread-meta">
+          <span>${o(e.author)}</span>
+          <span>${e.date}</span>
+          <span><i class="fa-solid fa-comment"></i> ${e.replies} respuestas</span>
+        </div>
+      </a>
+    </li>
+  `}function l(){const e={ejercicios:document.getElementById("threads-ejercicios"),funcionalidades:document.getElementById("threads-funcionalidades"),general:document.getElementById("threads-general")};Object.keys(e).forEach(a=>{const t=e[a];if(!t)return;const r=c.filter(i=>i.category===a);r.length===0?t.innerHTML='<li class="comunidad-thread-empty">Aún no hay hilos. Iniciá sesión para crear el primero.</li>':t.innerHTML=r.map(i=>d(i)).join("")}),document.querySelectorAll(".comunidad-cat-link").forEach(a=>{a.addEventListener("click",t=>{const r=t.currentTarget,i=r.getAttribute("href");i!=null&&i.startsWith("#")&&(document.querySelectorAll(".comunidad-cat-link").forEach(n=>n.classList.remove("active")),r.classList.add("active"))})})}document.body.classList.contains("comunidad-page")&&(l(),s());

@@ -1,62 +1,73 @@
 <!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Comunidad – EasyDrill</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-    <script type="module" crossorigin src="/assets/comunidad-Da4omod1.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-B5Qt9EMX.js">
-    <link rel="stylesheet" crossorigin href="/assets/comunidad-B0h8FnkG.css">
-    <link rel="stylesheet" crossorigin href="/assets/home-BWU-HiA-.css">
-  </head>
-  <body class="comunidad-page">
-    <header class="home-header">
-      <a href="index.html" class="home-logo">EasyDrill</a>
-      <nav class="home-nav">
-        <a href="perfil.html">Tu perfil</a>
-        <a href="index.html">Inicio</a>
-        <a href="index.html#marketplace">Destacados</a>
-        <a href="bolsa-de-trabajo.html">Bolsa de trabajo</a>
-        <a href="aprendizaje.html">Aprendizaje</a>
-        <a href="comunidad.html">Comunidad</a>
-        <a href="editor.html">Abrir pizarrón</a>
-        <a href="#login" class="home-nav-login">Iniciar sesión</a>
-      </nav>
-    </header>
 
-    <main class="comunidad-main">
-      <section class="comunidad-hero page-hero">
-        <h1>Comunidad</h1>
-        <p>Foro para discutir ejercicios, compartir ideas, pedir ayuda y proponer funcionalidades. Tu voz suma.</p>
-        <a href="#login" class="home-cta-secondary"><i class="fa-solid fa-pen"></i> Iniciar sesión para participar</a>
-      </section>
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Comunidad – EasyDrill</title>
+  
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <script type="module" crossorigin src="/assets/comunidad-2973555e.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-3cfb730f.js">
+  <link rel="modulepreload" crossorigin href="/assets/client-c375c8af.js">
+  <link rel="modulepreload" crossorigin href="/assets/user-58edc8be.js">
+  <link rel="modulepreload" crossorigin href="/assets/nav-auth-1aae0094.js">
+  <link rel="stylesheet" href="/assets/nav-auth-0721fcc0.css">
+  <link rel="stylesheet" href="/assets/comunidad-ed5128b9.css">
+</head>
 
-      <nav class="comunidad-categories" aria-label="Categorías del foro">
-        <a href="#ejercicios" class="comunidad-cat-link active">Ejercicios</a>
-        <a href="#funcionalidades" class="comunidad-cat-link">Funcionalidades y features</a>
-        <a href="#general" class="comunidad-cat-link">General</a>
-      </nav>
+<body class="comunidad-page">
+  <header class="home-header">
+    <a href="index.html" class="home-logo">EasyDrill</a>
+    <nav class="home-nav">
+      <a href="perfil.html">Tu perfil</a>
+      <a href="index.html">Inicio</a>
+      <a href="index.html#marketplace">Destacados</a>
+      <a href="bolsa-de-trabajo.html">Bolsa de trabajo</a>
+      <a href="aprendizaje.html">Aprendizaje</a>
+      <a href="comunidad.html">Comunidad</a>
+      <a href="editor.html">Abrir pizarrón</a>
+      <a href="login.html" class="home-nav-login">Iniciar sesión</a>
+    </nav>
+  </header>
 
-      <section class="comunidad-section" id="ejercicios">
-        <h2 class="comunidad-section-title"><i class="fa-solid fa-futbol"></i> Ejercicios</h2>
-        <p class="comunidad-section-desc">Compartí ejercicios, preguntá cómo armar una jugada o pedí feedback sobre tu planteo.</p>
-        <ul class="comunidad-thread-list" id="threads-ejercicios"></ul>
-      </section>
+  <main class="comunidad-main">
+    <section class="comunidad-hero page-hero">
+      <h1>Comunidad</h1>
+      <p>Foro para discutir ejercicios, compartir ideas, pedir ayuda y proponer funcionalidades. Tu voz suma.</p>
+      <a href="login.html" class="home-cta-secondary"><i class="fa-solid fa-pen"></i> Iniciar sesión para participar</a>
+    </section>
 
-      <section class="comunidad-section" id="funcionalidades">
-        <h2 class="comunidad-section-title"><i class="fa-solid fa-lightbulb"></i> Funcionalidades y features deseadas</h2>
-        <p class="comunidad-section-desc">Sugerí mejoras, pedí que se incorpore una función o votá las ideas de otros.</p>
-        <ul class="comunidad-thread-list" id="threads-funcionalidades"></ul>
-      </section>
+    <nav class="comunidad-categories" aria-label="Categorías del foro">
+      <a href="#ejercicios" class="comunidad-cat-link active">Ejercicios</a>
+      <a href="#funcionalidades" class="comunidad-cat-link">Funcionalidades y features</a>
+      <a href="#general" class="comunidad-cat-link">General</a>
+    </nav>
 
-      <section class="comunidad-section" id="general">
-        <h2 class="comunidad-section-title"><i class="fa-solid fa-comments"></i> General</h2>
-        <p class="comunidad-section-desc">Todo lo demás: presentaciones, dudas sobre el uso de EasyDrill, organización de torneos, etc.</p>
-        <ul class="comunidad-thread-list" id="threads-general"></ul>
-      </section>
-    </main>
+    <section class="comunidad-section" id="ejercicios">
+      <h2 class="comunidad-section-title"><i class="fa-solid fa-futbol"></i> Ejercicios</h2>
+      <p class="comunidad-section-desc">Compartí ejercicios, preguntá cómo armar una jugada o pedí feedback sobre tu
+        planteo.</p>
+      <ul class="comunidad-thread-list" id="threads-ejercicios"></ul>
+    </section>
 
-  </body>
+    <section class="comunidad-section" id="funcionalidades">
+      <h2 class="comunidad-section-title"><i class="fa-solid fa-lightbulb"></i> Funcionalidades y features deseadas</h2>
+      <p class="comunidad-section-desc">Sugerí mejoras, pedí que se incorpore una función o votá las ideas de otros.</p>
+      <ul class="comunidad-thread-list" id="threads-funcionalidades"></ul>
+    </section>
+
+    <section class="comunidad-section" id="general">
+      <h2 class="comunidad-section-title"><i class="fa-solid fa-comments"></i> General</h2>
+      <p class="comunidad-section-desc">Todo lo demás: presentaciones, dudas sobre el uso de EasyDrill, organización de
+        torneos, etc.</p>
+      <ul class="comunidad-thread-list" id="threads-general"></ul>
+    </section>
+  </main>
+
+  
+</body>
+
 </html>

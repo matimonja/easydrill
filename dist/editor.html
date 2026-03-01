@@ -1,65 +1,178 @@
 <!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Pizarra Táctica | EasyDrill</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-    <script type="module" crossorigin src="/assets/editor-w0dcd-qg.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-B5Qt9EMX.js">
-    <link rel="stylesheet" crossorigin href="/assets/editor-CfaBxZc8.css">
-  </head>
-  <body>
-    <div id="app">
-      <a href="index.html" class="editor-back-home" title="Volver al inicio"><i class="fa-solid fa-arrow-left"></i> Inicio</a>
-      <div id="game-container">
-        <div id="secondary-menu" class="secondary-menu collapsed">
-            <div class="menu-header">
-                <span>Opciones</span>
-                <button id="btn-collapse-menu" class="icon-btn"><i class="fa-solid fa-chevron-left"></i></button>
-            </div>
-            <div class="menu-content">
-                <p class="placeholder-text">Configuraciones del elemento seleccionado...</p>
-            </div>
-        </div>
-        <button id="btn-open-menu" class="floating-toggle"><i class="fa-solid fa-bars"></i></button>
-        <canvas id="gameCanvas"></canvas>
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Pizarra Táctica | EasyDrill</title>
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <script type="module" crossorigin src="/assets/editor-45ccb020.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-3cfb730f.js">
+  <link rel="modulepreload" crossorigin href="/assets/preload-helper-cf010ec4.js">
+  <link rel="modulepreload" crossorigin href="/assets/client-c375c8af.js">
+  <link rel="modulepreload" crossorigin href="/assets/user-58edc8be.js">
+  <link rel="modulepreload" crossorigin href="/assets/ExerciseStorage-321cadc6.js">
+  <link rel="modulepreload" crossorigin href="/assets/SyncIndicator-7c816d96.js">
+  <link rel="stylesheet" href="/assets/editor-022fcd8f.css">
+</head>
+
+<body>
+  <!-- Seccion 1: Setup (ocupa 100dvh, se oculta tras scroll al editor) -->
+  <div id="setup-screen">
+    <div class="setup-container">
+      <div class="setup-header">
+        <h1><i class="fa-solid fa-wand-magic-sparkles"></i> Nuevo Ejercicio</h1>
+        <p>Seleccioná la zona de la cancha donde dibujar</p>
       </div>
 
-      <div id="main-toolbar" class="main-toolbar">
+      <div class="zone-cards">
+        <button class="zone-card active" data-preset="full" id="zone-full">
+          <div class="zone-card-icon">
+            <div class="mini-field">
+              <div class="zone-highlight zone-full"></div>
+            </div>
+          </div>
+          <span class="zone-card-label">Toda la cancha</span>
+        </button>
+
+        <button class="zone-card" data-preset="half" id="zone-half">
+          <div class="zone-card-icon">
+            <div class="mini-field">
+              <div class="zone-highlight zone-half"></div>
+            </div>
+          </div>
+          <span class="zone-card-label">Media cancha</span>
+        </button>
+
+        <button class="zone-card" data-preset="quarter" id="zone-quarter">
+          <div class="zone-card-icon">
+            <div class="mini-field">
+              <div class="zone-highlight zone-quarter"></div>
+            </div>
+          </div>
+          <span class="zone-card-label">Fondo a 25m</span>
+        </button>
+
+        <button class="zone-card" data-preset="area" id="zone-area">
+          <div class="zone-card-icon">
+            <div class="mini-field">
+              <div class="zone-highlight zone-area"></div>
+            </div>
+          </div>
+          <span class="zone-card-label">Área</span>
+        </button>
+
+        <button class="zone-card" data-preset="custom" id="zone-custom">
+          <div class="zone-card-icon">
+            <div class="mini-field">
+              <div class="zone-highlight zone-custom"></div>
+            </div>
+          </div>
+          <span class="zone-card-label">Espacio custom</span>
+        </button>
+      </div>
+
+      <div class="custom-zone-section" id="custom-section">
+        <span class="section-label">Dibujá un rectángulo sobre la cancha para elegir la zona</span>
+        <div class="custom-canvas-wrapper">
+          <canvas id="zone-preview-canvas"></canvas>
+        </div>
+      </div>
+
+      <button class="setup-cta" id="btn-start">
+        <i class="fa-solid fa-pen-ruler"></i>
+        Comenzar a dibujar
+      </button>
+
+      <div class="setup-back">
+        <a href="index.html"><i class="fa-solid fa-arrow-left"></i> Volver al inicio</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Seccion 2: Editor -->
+  <div id="app">
+    <!-- Overlay en portrait (móvil): pedir rotar a horizontal -->
+    <div id="rotate-overlay" class="rotate-overlay" aria-hidden="true">
+      <div class="rotate-overlay-content">
+        <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+        <p>Para crear el ejercicio, rote el dispositivo en horizontal</p>
+      </div>
+    </div>
+    <div id="game-container">
+      <div id="secondary-menu" class="secondary-menu collapsed">
+        <div class="menu-header">
+          <span>Opciones</span>
+          <button id="btn-collapse-menu" class="icon-btn"><i class="fa-solid fa-chevron-left"></i></button>
+        </div>
+        <div class="menu-content">
+          <p class="placeholder-text">Configuraciones del elemento seleccionado...</p>
+        </div>
+      </div>
+      <button id="btn-open-menu" class="floating-toggle"><i class="fa-solid fa-bars"></i></button>
+      <!-- Panel lateral derecho para propiedades (solo visible en móvil) -->
+      <div id="properties-side-panel" class="properties-side-panel collapsed">
+        <div class="panel-header">
+          <span id="props-panel-title">Propiedades</span>
+          <button id="btn-close-props-panel" class="icon-btn"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div id="props-panel-content" class="panel-content"></div>
+      </div>
+      <canvas id="gameCanvas"></canvas>
+    </div>
+
+    <div id="main-toolbar" class="main-toolbar">
+      <div class="main-toolbar-content">
         <div class="toolbar-section section-modes">
-            <button id="btn-mode-edit" class="mode-btn active" title="Modo Edición"><i class="fa-solid fa-pen-ruler"></i></button>
-            <button id="btn-mode-play" class="mode-btn" title="Modo Reproducción"><i class="fa-solid fa-play"></i></button>
+          <button id="btn-mode-edit" class="mode-btn active" title="Modo Edición"><i
+              class="fa-solid fa-pen-ruler"></i></button>
+          <button id="btn-mode-play" class="mode-btn" title="Modo Reproducción"><i
+              class="fa-solid fa-play"></i></button>
+          <button id="btn-save" class="tool-btn" title="Guardar"><i class="fa-solid fa-floppy-disk"></i></button>
+          <span id="sync-indicator" class="sync-indicator hidden" title="Estado de sincronización"></span>
+          <button id="btn-settings" class="tool-btn" title="Configuración del ejercicio"><i
+              class="fa-solid fa-gear"></i></button>
         </div>
         <div class="separator-vertical"></div>
         <div class="toolbar-section section-tools">
-            <div id="edit-tools-panel" class="tools-grid">
-                <button class="tool-btn active" id="tool-select" title="Seleccionar (V)"><i class="fa-solid fa-arrow-pointer"></i></button>
-                <button class="tool-btn" id="tool-player" title="Crear Jugador (P)"><i class="fa-solid fa-user"></i></button>
-                <button class="tool-btn" id="tool-shape" title="Formas (S)"><i class="fa-solid fa-shapes"></i></button>
-                <button class="tool-btn" id="tool-exercise" title="Objetos (O)"><i class="fa-solid fa-cube"></i></button>
-                <button class="tool-btn" id="tool-camera" title="Cámara (C)"><i class="fa-solid fa-camera"></i></button>
-                <button class="tool-btn" id="action-undo" title="Deshacer (Ctrl+Z)"><i class="fa-solid fa-rotate-left"></i></button>
-                <button class="tool-btn" id="action-redo" title="Rehacer (Ctrl+Y)"><i class="fa-solid fa-rotate-right"></i></button>
+          <div id="edit-tools-panel" class="tools-grid">
+            <button class="tool-btn active" id="tool-select" title="Seleccionar (V)"><i
+                class="fa-solid fa-arrow-pointer"></i></button>
+            <button class="tool-btn" id="tool-player" title="Crear Jugador (P)"><i
+                class="fa-solid fa-user"></i></button>
+            <button class="tool-btn" id="tool-shape" title="Formas (S)"><i class="fa-solid fa-shapes"></i></button>
+            <button class="tool-btn" id="tool-exercise" title="Objetos (O)"><i class="fa-solid fa-cube"></i></button>
+            <button class="tool-btn" id="tool-camera" title="Cámara (C)"><i class="fa-solid fa-camera"></i></button>
+            <button class="tool-btn" id="action-undo" title="Deshacer (Ctrl+Z)"><i
+                class="fa-solid fa-rotate-left"></i></button>
+            <button class="tool-btn" id="action-redo" title="Rehacer (Ctrl+Y)"><i
+                class="fa-solid fa-rotate-right"></i></button>
+          </div>
+          <div id="play-tools-panel" class="tools-grid play-tools-panel hidden">
+            <button class="tool-btn" id="anim-play" title="Reproducir/Pausar"><i class="fa-solid fa-play"></i></button>
+            <button class="tool-btn" id="anim-stop" title="Detener/Reiniciar"><i class="fa-solid fa-stop"></i></button>
+            <div style="display: flex; align-items: center; gap: 5px; margin-left: 10px;">
+              <i class="fa-solid fa-gauge-high" style="color: #888; font-size: 0.8rem;"></i>
+              <input type="range" id="anim-speed" class="menu-input" min="0.5" max="3.0" step="0.1" value="1.0"
+                style="width: 100px;">
+              <span id="anim-speed-val" style="font-size: 0.8rem; color: #fff; min-width: 30px;">1.0x</span>
             </div>
-            <div id="play-tools-panel" class="tools-grid play-tools-panel hidden">
-                <button class="tool-btn" id="anim-play" title="Reproducir/Pausar"><i class="fa-solid fa-play"></i></button>
-                <button class="tool-btn" id="anim-stop" title="Detener/Reiniciar"><i class="fa-solid fa-stop"></i></button>
-                <div style="display: flex; align-items: center; gap: 5px; margin-left: 10px;">
-                    <i class="fa-solid fa-gauge-high" style="color: #888; font-size: 0.8rem;"></i>
-                    <input type="range" id="anim-speed" class="menu-input" min="0.5" max="3.0" step="0.1" value="1.0" style="width: 100px;">
-                    <span id="anim-speed-val" style="font-size: 0.8rem; color: #fff; min-width: 30px;">1.0x</span>
-                </div>
-            </div>
+          </div>
         </div>
         <div class="separator-vertical"></div>
         <div class="toolbar-section section-properties">
-            <div id="properties-panel" class="properties-content">
-                <span class="placeholder-text-small">Seleccione una herramienta...</span>
-            </div>
+          <div id="properties-panel" class="properties-content">
+            <span class="placeholder-text-small">Seleccione una herramienta...</span>
+          </div>
         </div>
       </div>
+      <button type="button" id="toolbar-collapse-btn" class="toolbar-collapse-btn" aria-label="Colapsar menú"
+        title="Colapsar menú"><i class="fa-solid fa-chevron-down"></i><i class="fa-solid fa-chevron-up"></i></button>
     </div>
-  </body>
+  </div>
+  
+</body>
+
 </html>

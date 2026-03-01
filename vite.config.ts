@@ -9,7 +9,6 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: 'index.html',
-        setup: 'setup.html',
         editor: 'editor.html',
         marketplace: 'marketplace.html',
         bolsa: 'bolsa-de-trabajo.html',

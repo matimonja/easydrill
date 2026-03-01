@@ -440,10 +440,6 @@ export class Game implements IGameContext {
         document.getElementById('btn-save')?.addEventListener('click', () => {
             this.saveAndNavigate();
         });
-        document.getElementById('btn-settings')?.addEventListener('click', () => {
-            window.location.href = 'setup.html';
-        });
-
         // Inject Scene Controls
         const modesSection = document.querySelector('.section-modes');
         if (modesSection) {

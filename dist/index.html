@@ -1,216 +1,240 @@
 <!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>EasyDrill – Planificación y ejercicios para tu deporte</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-    <script type="module" crossorigin src="/assets/main-CBAFRzre.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-B5Qt9EMX.js">
-    <link rel="stylesheet" crossorigin href="/assets/home-BWU-HiA-.css">
-  </head>
-  <body class="home">
-    <header class="home-header">
-      <span class="home-logo">EasyDrill</span>
-      <nav class="home-nav">
-        <a href="perfil.html">Tu perfil</a>
-        <a href="marketplace.html">Marketplace</a>
-        <a href="#comunidad">Comunidad</a>
-        <a href="#aprendizaje">Aprendizaje</a>
-        <a href="editor.html">Abrir pizarrón</a>
-        <a href="#bolsa">Bolsa de trabajo</a>
-        <a href="#login" class="home-nav-login">Iniciar sesión</a>
-      </nav>
-    </header>
 
-    <section class="home-hero">
-      <canvas class="hero-bg-canvas" id="hero-bg-canvas" aria-hidden="true"></canvas>
-      <div class="home-hero-content">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EasyDrill – Planificación y ejercicios para tu deporte</title>
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <script type="module" crossorigin src="/assets/main-3439d67b.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-3cfb730f.js">
+  <link rel="modulepreload" crossorigin href="/assets/client-c375c8af.js">
+  <link rel="modulepreload" crossorigin href="/assets/user-58edc8be.js">
+  <link rel="modulepreload" crossorigin href="/assets/nav-auth-1aae0094.js">
+  <link rel="stylesheet" href="/assets/nav-auth-0721fcc0.css">
+</head>
+
+<body class="home">
+  <header class="home-header">
+    <span class="home-logo">EasyDrill</span>
+    <button class="nav-toggle" id="nav-toggle" aria-label="Abrir menú" aria-expanded="false">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+    <nav class="home-nav" id="home-nav">
+      <a href="login.html" class="home-nav-login">Iniciar sesión</a>
+      <a href="perfil.html">Tu perfil</a>
+      <a href="marketplace.html">Marketplace</a>
+      <a href="#comunidad">Comunidad</a>
+      <a href="#aprendizaje">Aprendizaje</a>
+      <a href="editor.html">Abrir pizarrón</a>
+      <a href="#bolsa">Bolsa de trabajo</a>
+    </nav>
+  </header>
+
+  <section class="home-hero">
+    <canvas class="hero-bg-canvas" id="hero-bg-canvas" aria-hidden="true"></canvas>
+    <div class="home-hero-content">
       <h1>Planificá tus entrenamientos con claridad</h1>
       <p>Creá ejercicios tácticos, compartí con tu equipo y coordiná canchas y categorías desde un solo lugar.</p>
       <a href="editor.html" class="home-cta-primary">
         <i class="fa-solid fa-pen-ruler"></i> Crear ejercicio en el pizarrón
       </a>
-      </div>
-    </section>
+    </div>
+  </section>
 
-    <section class="home-section" id="perfil">
-      <h2 class="home-section-title">¿Cómo vas a usar EasyDrill?</h2>
-      <div class="profile-cards">
-        <button type="button" class="profile-card active" data-profile="entrenador" aria-pressed="true">
-          <h3><i class="fa-solid fa-person-chalkboard"></i> Entrenador</h3>
-          <p>Armá y organizá tus ejercicios, planificá jornadas y evaluá a tus jugadoras.</p>
-        </button>
-        <button type="button" class="profile-card" data-profile="club" aria-pressed="false">
-          <h3><i class="fa-solid fa-building"></i> Coordinador / Club</h3>
-          <p>Gestioná espacios, validá planificaciones por categoría y acompañá a los entrenadores.</p>
-        </button>
-      </div>
+  <section class="home-section" id="perfil">
+    <h2 class="home-section-title">¿Cómo vas a usar EasyDrill?</h2>
+    <div class="profile-cards">
+      <button type="button" class="profile-card active" data-profile="entrenador" aria-pressed="true">
+        <h3><i class="fa-solid fa-person-chalkboard"></i> Entrenador</h3>
+        <p>Armá y organizá tus ejercicios, planificá jornadas y evaluá a tus jugadoras.</p>
+      </button>
+      <button type="button" class="profile-card" data-profile="club" aria-pressed="false">
+        <h3><i class="fa-solid fa-building"></i> Coordinador / Club</h3>
+        <p>Gestioná espacios, validá planificaciones por categoría y acompañá a los entrenadores.</p>
+      </button>
+    </div>
 
-      <div class="profile-content" id="profile-content" data-profile="entrenador" aria-labelledby="perfil">
-        <div class="entrenador-only">
-          <h3 style="margin-bottom: 1rem;">Para entrenadores</h3>
-          <ul>
-            <li>Armá tu carpeta de ejercicios y organizala por categoría o fecha.</li>
-            <li>Buscá y continuá o mejorá el ejercicio de otro entrenador.</li>
-            <li>Compartí tus ideas con la comunidad.</li>
-            <li>Planificá tus jornadas de entrenamiento.</li>
-            <li>Evaluá a tus jugadoras.</li>
-          </ul>
-        </div>
-        <div class="club-only">
-          <h3 style="margin-bottom: 1rem;">Para clubes y coordinadores</h3>
-          <ul>
-            <li>Coordina los espacios de cancha y horarios.</li>
-            <li>Validá los ejercicios y planificaciones para cada categoría.</li>
-            <li>Ayudá a crecer a los nuevos entrenadores.</li>
-          </ul>
-        </div>
+    <div class="profile-content" id="profile-content" data-profile="entrenador" aria-labelledby="perfil">
+      <div class="entrenador-only">
+        <h3 style="margin-bottom: 1rem;">Para entrenadores</h3>
+        <ul>
+          <li>Armá tu carpeta de ejercicios y organizala por categoría o fecha.</li>
+          <li>Buscá y continuá o mejorá el ejercicio de otro entrenador.</li>
+          <li>Compartí tus ideas con la comunidad.</li>
+          <li>Planificá tus jornadas de entrenamiento.</li>
+          <li>Evaluá a tus jugadoras.</li>
+        </ul>
       </div>
-    </section>
-
-    <section class="home-marketplace" id="marketplace">
-      <h2 class="home-section-title">Ejercicios destacados</h2>
-      <p class="home-marketplace-intro">
-        Descubrí ejercicios compartidos por la comunidad. Usalos como base y adaptalos a tu equipo.
-      </p>
-      <div class="carousel-wrap">
-        <button type="button" class="carousel-btn carousel-btn-prev" aria-label="Anterior"><i class="fa-solid fa-chevron-left"></i></button>
-        <div class="carousel" id="home-carousel">
-          <article class="carousel-card" data-drill-id="1">
-            <div class="carousel-thumb" aria-hidden="true">
-              <span class="carousel-thumb-placeholder"><i class="fa-solid fa-play"></i> Vista previa</span>
-            </div>
-            <div class="carousel-body">
-              <h4>Ronda de pases en triángulo</h4>
-              <p>Ejercicio de posesión y movimiento para mediocampo. Ideal para calentar o trabajar apoyos.</p>
-              <div class="carousel-tags">
-                <span class="tag tag-blue">Pases</span>
-                <span class="tag tag-green">Posesión</span>
-                <span class="tag tag-orange">Ataque</span>
-              </div>
-              <div class="carousel-card-actions">
-                <a href="editor.html?drill=1" class="card-action-link"><i class="fa-solid fa-pen-ruler"></i> Abrir en pizarrón</a>
-                <a href="editor.html?drill=1&fork=1" class="card-action-fork" title="Hacer fork: copiar a tu cuaderno"><i class="fa-solid fa-code-branch"></i> Fork</a>
-              </div>
-            </div>
-          </article>
-          <article class="carousel-card" data-drill-id="2">
-            <div class="carousel-thumb" aria-hidden="true">
-              <span class="carousel-thumb-placeholder"><i class="fa-solid fa-play"></i> Vista previa</span>
-            </div>
-            <div class="carousel-body">
-              <h4>Presión post pérdida</h4>
-              <p>Transición defensiva y recuperación rápida. Trabaja la reacción al perder el balón.</p>
-              <div class="carousel-tags">
-                <span class="tag tag-red">Defensa</span>
-                <span class="tag tag-violet">Transición</span>
-              </div>
-              <div class="carousel-card-actions">
-                <a href="editor.html?drill=2" class="card-action-link"><i class="fa-solid fa-pen-ruler"></i> Abrir en pizarrón</a>
-                <a href="editor.html?drill=2&fork=1" class="card-action-fork" title="Hacer fork: copiar a tu cuaderno"><i class="fa-solid fa-code-branch"></i> Fork</a>
-              </div>
-            </div>
-          </article>
-          <article class="carousel-card" data-drill-id="3">
-            <div class="carousel-thumb" aria-hidden="true">
-              <span class="carousel-thumb-placeholder"><i class="fa-solid fa-play"></i> Vista previa</span>
-            </div>
-            <div class="carousel-body">
-              <h4>Salida desde el arco</h4>
-              <p>Construcción desde atrás con apoyos y desmarques. Salida limpia bajo presión.</p>
-              <div class="carousel-tags">
-                <span class="tag tag-blue">Salida</span>
-                <span class="tag tag-green">Contención</span>
-              </div>
-              <div class="carousel-card-actions">
-                <a href="editor.html?drill=3" class="card-action-link"><i class="fa-solid fa-pen-ruler"></i> Abrir en pizarrón</a>
-                <a href="editor.html?drill=3&fork=1" class="card-action-fork" title="Hacer fork: copiar a tu cuaderno"><i class="fa-solid fa-code-branch"></i> Fork</a>
-              </div>
-            </div>
-          </article>
-          <article class="carousel-card" data-drill-id="4">
-            <div class="carousel-thumb" aria-hidden="true">
-              <span class="carousel-thumb-placeholder"><i class="fa-solid fa-play"></i> Vista previa</span>
-            </div>
-            <div class="carousel-body">
-              <h4>Rondo 4v2 en espacio reducido</h4>
-              <p>Mantener la pelota en superioridad numérica. Pases rápidos y movilidad.</p>
-              <div class="carousel-tags">
-                <span class="tag tag-orange">Posesión</span>
-                <span class="tag tag-red">Press</span>
-              </div>
-              <div class="carousel-card-actions">
-                <a href="editor.html?drill=4" class="card-action-link"><i class="fa-solid fa-pen-ruler"></i> Abrir en pizarrón</a>
-                <a href="editor.html?drill=4&fork=1" class="card-action-fork" title="Hacer fork: copiar a tu cuaderno"><i class="fa-solid fa-code-branch"></i> Fork</a>
-              </div>
-            </div>
-          </article>
-        </div>
-        <button type="button" class="carousel-btn carousel-btn-next" aria-label="Siguiente"><i class="fa-solid fa-chevron-right"></i></button>
+      <div class="club-only">
+        <h3 style="margin-bottom: 1rem;">Para clubes y coordinadores</h3>
+        <ul>
+          <li>Coordina los espacios de cancha y horarios.</li>
+          <li>Validá los ejercicios y planificaciones para cada categoría.</li>
+          <li>Ayudá a crecer a los nuevos entrenadores.</li>
+        </ul>
       </div>
-      <p class="home-marketplace-cta">
-        <a href="marketplace.html" class="home-link-cta">Ver todo el marketplace <i class="fa-solid fa-arrow-right"></i></a>
-      </p>
-    </section>
+    </div>
+  </section>
 
-    <section class="home-section home-comunidad" id="comunidad">
-      <h2 class="home-section-title">Comunidad</h2>
-      <p class="home-marketplace-intro">
-        Foro para discutir ejercicios, compartir ideas, pedir ayuda y proponer funcionalidades. Tu voz suma.
-      </p>
-      <div class="home-section-cta">
-        <a href="comunidad.html" class="home-cta-secondary">
-          <i class="fa-solid fa-comments"></i> Ir al foro de la comunidad
-        </a>
+  <section class="home-marketplace" id="marketplace">
+    <h2 class="home-section-title">Ejercicios destacados</h2>
+    <p class="home-marketplace-intro">
+      Descubrí ejercicios compartidos por la comunidad. Usalos como base y adaptalos a tu equipo.
+    </p>
+    <div class="carousel-wrap">
+      <button type="button" class="carousel-btn carousel-btn-prev" aria-label="Anterior"><i
+          class="fa-solid fa-chevron-left"></i></button>
+      <div class="carousel" id="home-carousel">
+        <article class="carousel-card" data-drill-id="1">
+          <div class="carousel-thumb" aria-hidden="true">
+            <span class="carousel-thumb-placeholder"><i class="fa-solid fa-play"></i> Vista previa</span>
+          </div>
+          <div class="carousel-body">
+            <h4>Ronda de pases en triángulo</h4>
+            <p>Ejercicio de posesión y movimiento para mediocampo. Ideal para calentar o trabajar apoyos.</p>
+            <div class="carousel-tags">
+              <span class="tag tag-blue">Pases</span>
+              <span class="tag tag-green">Posesión</span>
+              <span class="tag tag-orange">Ataque</span>
+            </div>
+            <div class="carousel-card-actions">
+              <a href="editor.html?drill=1" class="card-action-link"><i class="fa-solid fa-pen-ruler"></i> Abrir en
+                pizarrón</a>
+              <a href="editor.html?drill=1&fork=1" class="card-action-fork" title="Hacer fork: copiar a tu cuaderno"><i
+                  class="fa-solid fa-code-branch"></i> Fork</a>
+            </div>
+          </div>
+        </article>
+        <article class="carousel-card" data-drill-id="2">
+          <div class="carousel-thumb" aria-hidden="true">
+            <span class="carousel-thumb-placeholder"><i class="fa-solid fa-play"></i> Vista previa</span>
+          </div>
+          <div class="carousel-body">
+            <h4>Presión post pérdida</h4>
+            <p>Transición defensiva y recuperación rápida. Trabaja la reacción al perder el balón.</p>
+            <div class="carousel-tags">
+              <span class="tag tag-red">Defensa</span>
+              <span class="tag tag-violet">Transición</span>
+            </div>
+            <div class="carousel-card-actions">
+              <a href="editor.html?drill=2" class="card-action-link"><i class="fa-solid fa-pen-ruler"></i> Abrir en
+                pizarrón</a>
+              <a href="editor.html?drill=2&fork=1" class="card-action-fork" title="Hacer fork: copiar a tu cuaderno"><i
+                  class="fa-solid fa-code-branch"></i> Fork</a>
+            </div>
+          </div>
+        </article>
+        <article class="carousel-card" data-drill-id="3">
+          <div class="carousel-thumb" aria-hidden="true">
+            <span class="carousel-thumb-placeholder"><i class="fa-solid fa-play"></i> Vista previa</span>
+          </div>
+          <div class="carousel-body">
+            <h4>Salida desde el arco</h4>
+            <p>Construcción desde atrás con apoyos y desmarques. Salida limpia bajo presión.</p>
+            <div class="carousel-tags">
+              <span class="tag tag-blue">Salida</span>
+              <span class="tag tag-green">Contención</span>
+            </div>
+            <div class="carousel-card-actions">
+              <a href="editor.html?drill=3" class="card-action-link"><i class="fa-solid fa-pen-ruler"></i> Abrir en
+                pizarrón</a>
+              <a href="editor.html?drill=3&fork=1" class="card-action-fork" title="Hacer fork: copiar a tu cuaderno"><i
+                  class="fa-solid fa-code-branch"></i> Fork</a>
+            </div>
+          </div>
+        </article>
+        <article class="carousel-card" data-drill-id="4">
+          <div class="carousel-thumb" aria-hidden="true">
+            <span class="carousel-thumb-placeholder"><i class="fa-solid fa-play"></i> Vista previa</span>
+          </div>
+          <div class="carousel-body">
+            <h4>Rondo 4v2 en espacio reducido</h4>
+            <p>Mantener la pelota en superioridad numérica. Pases rápidos y movilidad.</p>
+            <div class="carousel-tags">
+              <span class="tag tag-orange">Posesión</span>
+              <span class="tag tag-red">Press</span>
+            </div>
+            <div class="carousel-card-actions">
+              <a href="editor.html?drill=4" class="card-action-link"><i class="fa-solid fa-pen-ruler"></i> Abrir en
+                pizarrón</a>
+              <a href="editor.html?drill=4&fork=1" class="card-action-fork" title="Hacer fork: copiar a tu cuaderno"><i
+                  class="fa-solid fa-code-branch"></i> Fork</a>
+            </div>
+          </div>
+        </article>
       </div>
-    </section>
+      <button type="button" class="carousel-btn carousel-btn-next" aria-label="Siguiente"><i
+          class="fa-solid fa-chevron-right"></i></button>
+    </div>
+    <p class="home-marketplace-cta">
+      <a href="marketplace.html" class="home-link-cta">Ver todo el marketplace <i
+          class="fa-solid fa-arrow-right"></i></a>
+    </p>
+  </section>
 
-    <section class="home-section home-aprendizaje" id="aprendizaje">
-      <h2 class="home-section-title">Aprendizaje</h2>
-      <p class="home-marketplace-intro">
-        Guías, recursos y contenidos para mejorar tu planificación y tu formación como entrenador.
-      </p>
-      <div class="home-learning-cards">
-        <a href="aprendizaje.html#guias" class="home-learning-card">
-          <span class="home-learning-icon"><i class="fa-solid fa-book"></i></span>
-          <h3>Guías</h3>
-          <p>Pasos y buenas prácticas para armar sesiones y ejercicios.</p>
-        </a>
-        <a href="aprendizaje.html#recursos" class="home-learning-card">
-          <span class="home-learning-icon"><i class="fa-solid fa-folder-open"></i></span>
-          <h3>Recursos</h3>
-          <p>Plantillas y materiales descargables.</p>
-        </a>
-        <a href="aprendizaje.html#cursos" class="home-learning-card">
-          <span class="home-learning-icon"><i class="fa-solid fa-graduation-cap"></i></span>
-          <h3>Cursos</h3>
-          <p>Contenido formativo para seguir creciendo.</p>
-        </a>
-      </div>
-      <p class="home-marketplace-cta">
-        <a href="aprendizaje.html" class="home-link-cta">Ver sección de aprendizaje <i class="fa-solid fa-arrow-right"></i></a>
-      </p>
-    </section>
-
-    <section class="home-section home-bolsa" id="bolsa">
-      <h2 class="home-section-title">Bolsa de trabajo</h2>
-      <p class="home-marketplace-intro">
-        Encontrá ofertas para entrenadores, coordinadores y roles en clubes. Publicá tu búsqueda o encontrá tu próximo desafío.
-      </p>
-      <div class="home-section-cta">
-        <a href="bolsa-de-trabajo.html" class="home-cta-secondary">
-          <i class="fa-solid fa-briefcase"></i> Buscar en la bolsa de trabajo
-        </a>
-      </div>
-    </section>
-
-    <section class="home-footer-cta">
-      <a href="editor.html" class="home-cta-primary">
-        <i class="fa-solid fa-pen-ruler"></i> Ir al pizarrón táctica
+  <section class="home-section home-comunidad" id="comunidad">
+    <h2 class="home-section-title">Comunidad</h2>
+    <p class="home-marketplace-intro">
+      Foro para discutir ejercicios, compartir ideas, pedir ayuda y proponer funcionalidades. Tu voz suma.
+    </p>
+    <div class="home-section-cta">
+      <a href="comunidad.html" class="home-cta-secondary">
+        <i class="fa-solid fa-comments"></i> Ir al foro de la comunidad
       </a>
-    </section>
+    </div>
+  </section>
 
-  </body>
+  <section class="home-section home-aprendizaje" id="aprendizaje">
+    <h2 class="home-section-title">Aprendizaje</h2>
+    <p class="home-marketplace-intro">
+      Guías, recursos y contenidos para mejorar tu planificación y tu formación como entrenador.
+    </p>
+    <div class="home-learning-cards">
+      <a href="aprendizaje.html#guias" class="home-learning-card">
+        <span class="home-learning-icon"><i class="fa-solid fa-book"></i></span>
+        <h3>Guías</h3>
+        <p>Pasos y buenas prácticas para armar sesiones y ejercicios.</p>
+      </a>
+      <a href="aprendizaje.html#recursos" class="home-learning-card">
+        <span class="home-learning-icon"><i class="fa-solid fa-folder-open"></i></span>
+        <h3>Recursos</h3>
+        <p>Plantillas y materiales descargables.</p>
+      </a>
+      <a href="aprendizaje.html#cursos" class="home-learning-card">
+        <span class="home-learning-icon"><i class="fa-solid fa-graduation-cap"></i></span>
+        <h3>Cursos</h3>
+        <p>Contenido formativo para seguir creciendo.</p>
+      </a>
+    </div>
+    <p class="home-marketplace-cta">
+      <a href="aprendizaje.html" class="home-link-cta">Ver sección de aprendizaje <i
+          class="fa-solid fa-arrow-right"></i></a>
+    </p>
+  </section>
+
+  <section class="home-section home-bolsa" id="bolsa">
+    <h2 class="home-section-title">Bolsa de trabajo</h2>
+    <p class="home-marketplace-intro">
+      Encontrá ofertas para entrenadores, coordinadores y roles en clubes. Publicá tu búsqueda o encontrá tu próximo
+      desafío.
+    </p>
+    <div class="home-section-cta">
+      <a href="bolsa-de-trabajo.html" class="home-cta-secondary">
+        <i class="fa-solid fa-briefcase"></i> Buscar en la bolsa de trabajo
+      </a>
+    </div>
+  </section>
+
+  <section class="home-footer-cta">
+    <a href="editor.html" class="home-cta-primary">
+      <i class="fa-solid fa-pen-ruler"></i> Ir al pizarrón táctica
+    </a>
+  </section>
+
+  
+</body>
+
 </html>
