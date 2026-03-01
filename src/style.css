@@ -24,13 +24,18 @@
 body {
   margin: 0;
   padding: 0;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   background-color: var(--bg-dark);
   width: 100vw;
-  height: 100vh;
-  height: 100dvh;
   user-select: none;
   color: var(--text-color);
+}
+
+body.editor-locked {
+  overflow: hidden;
+  height: 100vh;
+  height: 100dvh;
 }
 
 #app {
@@ -924,15 +929,17 @@ body {
    ============================================================ */
 
 #setup-screen {
-  height: 100vh;
-  height: 100dvh;
+  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
   background: var(--bg-dark);
-  overflow-y: auto;
-  overflow-x: hidden;
+}
+
+body.editor-locked #setup-screen {
+  display: none;
 }
 
 .setup-container {

@@ -3,25 +3,54 @@ import { ExerciseZoneConfig } from './core/ExerciseZoneConfig';
 import { initSyncIndicator } from './persistence/SyncIndicator';
 import { ZoneSetupScreen } from './setup';
 
+let scrollGuardEnabled = true;
+
+function enableScrollGuard(): void {
+  scrollGuardEnabled = true;
+  window.scrollTo(0, 0);
+}
+
+function disableScrollGuard(): void {
+  scrollGuardEnabled = false;
+}
+
+function installScrollGuard(): void {
+  const setupScreen = document.getElementById('setup-screen')!;
+  window.addEventListener('scroll', () => {
+    if (!scrollGuardEnabled) return;
+    const maxScroll = setupScreen.offsetHeight - window.innerHeight;
+    if (maxScroll <= 0) {
+      window.scrollTo(0, 0);
+    } else if (window.scrollY > maxScroll) {
+      window.scrollTo(0, maxScroll);
+    }
+  });
+}
+
+function lockEditor(): void {
+  document.body.classList.add('editor-locked');
+  window.dispatchEvent(new Event('resize'));
+}
+
+function scrollToEditor(): void {
+  disableScrollGuard();
+
+  const app = document.getElementById('app')!;
+  app.scrollIntoView({ behavior: 'smooth' });
+
+  const onDone = () => lockEditor();
+
+  if ('onscrollend' in window) {
+    window.addEventListener('scrollend', onDone, { once: true });
+  } else {
+    setTimeout(onDone, 600);
+  }
+}
+
 function initGame(zoneConfig?: ExerciseZoneConfig, exerciseId?: string): void {
   const game = new Game('gameCanvas', zoneConfig, exerciseId);
   game.start();
   initSyncIndicator();
-}
-
-function transitionToEditor(zoneConfig?: ExerciseZoneConfig, exerciseId?: string): void {
-  const setupScreen = document.getElementById('setup-screen')!;
-  const app = document.getElementById('app')!;
-
-  setupScreen.style.transition = 'transform 0.35s ease-in-out, opacity 0.35s ease-in-out';
-  setupScreen.style.transform = 'translateY(-100%)';
-  setupScreen.style.opacity = '0';
-
-  setTimeout(() => {
-    setupScreen.style.display = 'none';
-    app.style.display = 'flex';
-    initGame(zoneConfig, exerciseId);
-  }, 350);
 }
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -30,18 +59,22 @@ window.addEventListener('DOMContentLoaded', () => {
   const drillId = params.get('drill') || undefined;
   const skipSetup = !!exerciseId || !!drillId;
 
-  const setupScreen = document.getElementById('setup-screen')!;
-  const app = document.getElementById('app')!;
+  installScrollGuard();
 
   if (skipSetup) {
-    setupScreen.style.display = 'none';
-    app.style.display = 'flex';
+    disableScrollGuard();
     initGame(undefined, exerciseId);
+    requestAnimationFrame(() => {
+      const app = document.getElementById('app')!;
+      app.scrollIntoView({ behavior: 'instant' });
+      requestAnimationFrame(() => lockEditor());
+    });
   } else {
-    app.style.display = 'none';
+    enableScrollGuard();
     new ZoneSetupScreen({
       onConfirm: (config) => {
-        transitionToEditor(config);
+        initGame(config);
+        scrollToEditor();
       },
     });
   }
